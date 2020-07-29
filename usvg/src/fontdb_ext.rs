@@ -1,11 +1,10 @@
 use std::convert::TryFrom;
 use std::num::NonZeroU16;
 
-use fontdb::{ID, Database};
+use fontdb::{Database, ID};
 use ttf_parser::GlyphId;
 
 use crate::tree;
-
 
 pub trait DatabaseExt {
     fn load_font(&self, id: ID) -> Option<Font>;
@@ -17,20 +16,24 @@ impl DatabaseExt for Database {
     #[inline(never)]
     fn load_font(&self, id: ID) -> Option<Font> {
         self.with_face_data(id, |data, face_index| -> Option<Font> {
-            let font = ttf_parser::Font::from_data(data, face_index)?;
+            let font = ttf_parser::Face::from_slice(data, face_index).ok()?;
 
             let units_per_em = NonZeroU16::new(font.units_per_em()?)?;
 
             let ascent = font.ascender();
             let descent = font.descender();
 
-            let x_height = font.x_height().and_then(|x| u16::try_from(x).ok()).and_then(NonZeroU16::new);
+            let x_height = font
+                .x_height()
+                .and_then(|x| u16::try_from(x).ok())
+                .and_then(NonZeroU16::new);
             let x_height = match x_height {
                 Some(height) => height,
                 None => {
                     // If not set - fallback to height * 45%.
                     // 45% is what Firefox uses.
-                    u16::try_from((f32::from(ascent - descent) * 0.45) as i32).ok()
+                    u16::try_from((f32::from(ascent - descent) * 0.45) as i32)
+                        .ok()
                         .and_then(NonZeroU16::new)?
                 }
             };
@@ -43,19 +46,18 @@ impl DatabaseExt for Database {
 
             let (underline_position, underline_thickness) = match font.underline_metrics() {
                 Some(metrics) => {
-                    let thickness = u16::try_from(metrics.thickness).ok()
+                    let thickness = u16::try_from(metrics.thickness)
+                        .ok()
                         .and_then(NonZeroU16::new)
                         // `ttf_parser` guarantees that units_per_em is >= 16
                         .unwrap_or(NonZeroU16::new(units_per_em.get() / 12).unwrap());
 
                     (metrics.position, thickness)
                 }
-                None => {
-                    (
-                        -(units_per_em.get() as i16) / 9,
-                        NonZeroU16::new(units_per_em.get() / 12).unwrap(),
-                    )
-                }
+                None => (
+                    -(units_per_em.get() as i16) / 9,
+                    NonZeroU16::new(units_per_em.get() / 12).unwrap(),
+                ),
             };
 
             // 0.2 and 0.4 are generic offsets used by some applications (Inkscape/librsvg).
@@ -87,9 +89,11 @@ impl DatabaseExt for Database {
     #[inline(never)]
     fn outline(&self, id: ID, glyph_id: GlyphId) -> Option<tree::PathData> {
         self.with_face_data(id, |data, face_index| -> Option<tree::PathData> {
-            let font = ttf_parser::Font::from_data(&data, face_index)?;
+            let font = ttf_parser::Face::from_slice(&data, face_index).ok()?;
 
-            let mut builder = PathBuilder { path: tree::PathData::with_capacity(16) };
+            let mut builder = PathBuilder {
+                path: tree::PathData::with_capacity(16),
+            };
             font.outline_glyph(glyph_id, &mut builder)?;
             Some(builder.path)
         })?
@@ -98,7 +102,7 @@ impl DatabaseExt for Database {
     #[inline(never)]
     fn has_char(&self, id: ID, c: char) -> bool {
         let res = self.with_face_data(id, |font_data, face_index| -> Option<bool> {
-            let font = ttf_parser::Font::from_data(font_data, face_index)?;
+            let font = ttf_parser::Face::from_slice(font_data, face_index).ok()?;
             font.glyph_index(c)?;
             Some(true)
         });
@@ -109,7 +113,6 @@ impl DatabaseExt for Database {
         }
     }
 }
-
 
 #[derive(Clone, Copy)]
 pub struct Font {
@@ -186,7 +189,6 @@ impl Font {
     }
 }
 
-
 struct PathBuilder {
     path: tree::PathData,
 }
@@ -201,17 +203,13 @@ impl ttf_parser::OutlineBuilder for PathBuilder {
     }
 
     fn quad_to(&mut self, x1: f32, y1: f32, x: f32, y: f32) {
-        self.path.push_quad_to(
-            x1 as f64, y1 as f64,
-            x as f64, y as f64,
-        );
+        self.path
+            .push_quad_to(x1 as f64, y1 as f64, x as f64, y as f64);
     }
 
     fn curve_to(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, x: f32, y: f32) {
         self.path.push_curve_to(
-            x1 as f64, y1 as f64,
-            x2 as f64, y2 as f64,
-            x as f64, y as f64
+            x1 as f64, y1 as f64, x2 as f64, y2 as f64, x as f64, y as f64,
         );
     }
 
@@ -219,7 +217,6 @@ impl ttf_parser::OutlineBuilder for PathBuilder {
         self.path.push_close_path();
     }
 }
-
 
 #[cfg(all(unix, not(target_os = "macos")))]
 pub fn load_system_fonts(db: &mut Database) {
