@@ -7,14 +7,14 @@
 */
 
 #![doc(html_root_url = "https://docs.rs/resvg/0.11.0")]
-
 #![warn(missing_docs)]
 
+pub use render::{create_root_image, render_to_canvas};
 pub use rgb::RGBA8;
 pub use usvg::ScreenSize;
 
-use usvg::NodeExt;
 use log::warn;
+use usvg::NodeExt;
 
 mod clip;
 mod filter;
@@ -25,7 +25,6 @@ mod mask;
 mod paint_server;
 mod path;
 mod render;
-
 
 /// A raster image that contains rendering results.
 ///
@@ -94,15 +93,14 @@ impl Image {
     }
 }
 
-
 /// Renders an SVG to image.
 pub fn render(
     tree: &usvg::Tree,
     fit_to: usvg::FitTo,
     background: Option<usvg::Color>,
 ) -> Option<Image> {
-    let (mut img, img_size)
-        = render::create_root_image(tree.svg_node().size.to_screen_size(), fit_to, background)?;
+    let (mut img, img_size) =
+        render::create_root_image(tree.svg_node().size.to_screen_size(), fit_to, background)?;
     render::render_to_canvas(tree, img_size, &mut img);
     Some(Image::from_surface(img))
 }
@@ -125,8 +123,8 @@ pub fn render_node(
         aspect: usvg::AspectRatio::default(),
     };
 
-    let (mut img, img_size)
-        = render::create_root_image(node_bbox.size().to_screen_size(), fit_to, background)?;
+    let (mut img, img_size) =
+        render::create_root_image(node_bbox.size().to_screen_size(), fit_to, background)?;
 
     render::render_node_to_canvas(node, vbox, img_size, &mut render::RenderState::Ok, &mut img);
     Some(Image::from_surface(img))

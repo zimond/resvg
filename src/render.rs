@@ -5,15 +5,14 @@
 use log::warn;
 
 pub(crate) mod prelude {
-    pub(crate) use usvg::*;
+    pub(crate) use super::*;
     pub(crate) use crate::layers::Layers;
     pub(crate) use crate::*;
     pub(crate) use tiny_skia as skia;
-    pub(crate) use super::*;
+    pub(crate) use usvg::*;
 }
 
 use prelude::*;
-
 
 /// Indicates the current rendering state.
 #[derive(Clone, PartialEq, Debug)]
@@ -26,7 +25,6 @@ pub(crate) enum RenderState {
     BackgroundFinished,
 }
 
-
 pub(crate) trait ConvTransform {
     fn to_native(&self) -> skia::Transform;
     fn from_native(_: skia::Transform) -> Self;
@@ -35,25 +33,35 @@ pub(crate) trait ConvTransform {
 impl ConvTransform for usvg::Transform {
     fn to_native(&self) -> skia::Transform {
         skia::Transform::new(
-            self.a as f32, self.b as f32, self.c as f32,
-            self.d as f32, self.e as f32, self.f as f32,
+            self.a as f32,
+            self.b as f32,
+            self.c as f32,
+            self.d as f32,
+            self.e as f32,
+            self.f as f32,
         )
     }
 
     fn from_native(ts: skia::Transform) -> Self {
         Self::new(
-            ts.a as f64, ts.b as f64, ts.c as f64,
-            ts.d as f64, ts.e as f64, ts.f as f64,
+            ts.a as f64,
+            ts.b as f64,
+            ts.c as f64,
+            ts.d as f64,
+            ts.e as f64,
+            ts.f as f64,
         )
     }
 }
 
-pub(crate) fn render_to_canvas(
-    tree: &usvg::Tree,
-    img_size: ScreenSize,
-    canvas: &mut tiny_skia::Canvas,
-) {
-    render_node_to_canvas(&tree.root(), tree.svg_node().view_box, img_size, &mut RenderState::Ok, canvas);
+pub fn render_to_canvas(tree: &usvg::Tree, img_size: ScreenSize, canvas: &mut tiny_skia::Canvas) {
+    render_node_to_canvas(
+        &tree.root(),
+        tree.svg_node().view_box,
+        img_size,
+        &mut RenderState::Ok,
+        canvas,
+    );
 }
 
 pub(crate) fn render_node_to_canvas(
@@ -77,7 +85,7 @@ pub(crate) fn render_node_to_canvas(
     canvas.set_transform(curr_ts);
 }
 
-pub(crate) fn create_root_image(
+pub fn create_root_image(
     size: ScreenSize,
     fit_to: usvg::FitTo,
     background: Option<usvg::Color>,
@@ -110,18 +118,12 @@ pub(crate) fn render_node(
     canvas: &mut skia::Canvas,
 ) -> Option<Rect> {
     match *node.borrow() {
-        usvg::NodeKind::Svg(_) => {
-            render_group(node, state, layers, canvas)
-        }
+        usvg::NodeKind::Svg(_) => render_group(node, state, layers, canvas),
         usvg::NodeKind::Path(ref path) => {
             crate::path::draw(&node.tree(), path, skia::BlendMode::SourceOver, canvas)
         }
-        usvg::NodeKind::Image(ref img) => {
-            Some(crate::image::draw(img, canvas))
-        }
-        usvg::NodeKind::Group(ref g) => {
-            render_group_impl(node, g, state, layers, canvas)
-        }
+        usvg::NodeKind::Image(ref img) => Some(crate::image::draw(img, canvas)),
+        usvg::NodeKind::Group(ref g) => render_group_impl(node, g, state, layers, canvas),
         _ => None,
     }
 }
@@ -197,7 +199,12 @@ fn render_group_impl(
         let curr_ts = canvas.get_transform();
         canvas.reset_transform();
         canvas.draw_surface(
-            &sub_surface, 0.0, 0.0, 255, skia::BlendMode::SourceOver, skia::FilterQuality::Low,
+            &sub_surface,
+            0.0,
+            0.0,
+            255,
+            skia::BlendMode::SourceOver,
+            skia::FilterQuality::Low,
         );
         canvas.set_transform(curr_ts);
         return bbox;
@@ -211,10 +218,18 @@ fn render_group_impl(
                 let ts = usvg::Transform::from_native(curr_ts);
                 let background = prepare_filter_background(node, filter, layers.image_size());
                 let fill_paint = prepare_filter_fill_paint(node, filter, bbox, ts, &sub_surface);
-                let stroke_paint = prepare_filter_stroke_paint(node, filter, bbox, ts, &sub_surface);
-                crate::filter::apply(filter, bbox, &ts, &node.tree(),
-                                     background.as_ref(), fill_paint.as_ref(), stroke_paint.as_ref(),
-                                     &mut sub_surface);
+                let stroke_paint =
+                    prepare_filter_stroke_paint(node, filter, bbox, ts, &sub_surface);
+                crate::filter::apply(
+                    filter,
+                    bbox,
+                    &ts,
+                    &node.tree(),
+                    background.as_ref(),
+                    fill_paint.as_ref(),
+                    stroke_paint.as_ref(),
+                    &mut sub_surface,
+                );
             }
         }
     }
@@ -249,7 +264,12 @@ fn render_group_impl(
     let curr_ts = canvas.get_transform();
     canvas.reset_transform();
     canvas.draw_surface(
-        &sub_surface, 0.0, 0.0, a, skia::BlendMode::SourceOver, skia::FilterQuality::Low,
+        &sub_surface,
+        0.0,
+        0.0,
+        a,
+        skia::BlendMode::SourceOver,
+        skia::FilterQuality::Low,
     );
     canvas.set_transform(curr_ts);
 
@@ -296,7 +316,13 @@ fn prepare_filter_fill_paint(
             let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
             let fill = Some(usvg::Fill::from_paint(paint));
             let fill = crate::paint_server::fill(&parent.tree(), &fill, style_bbox, ts);
-            surface.draw_rect(0.0, 0.0, region.width() as f32, region.height() as f32, &fill);
+            surface.draw_rect(
+                0.0,
+                0.0,
+                region.width() as f32,
+                region.height() as f32,
+                &fill,
+            );
         }
     }
 
@@ -318,7 +344,13 @@ fn prepare_filter_stroke_paint(
             let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
             let fill = Some(usvg::Fill::from_paint(paint));
             let fill = crate::paint_server::fill(&parent.tree(), &fill, style_bbox, ts);
-            surface.draw_rect(0.0, 0.0, region.width() as f32, region.height() as f32, &fill);
+            surface.draw_rect(
+                0.0,
+                0.0,
+                region.width() as f32,
+                region.height() as f32,
+                &fill,
+            );
         }
     }
 
@@ -333,7 +365,11 @@ pub(crate) fn create_subsurface(size: ScreenSize) -> Option<skia::Surface> {
             Some(surface)
         }
         None => {
-            warn!("Failed to create a {}x{} surface.", size.width(), size.height());
+            warn!(
+                "Failed to create a {}x{} surface.",
+                size.width(),
+                size.height()
+            );
             None
         }
     }
