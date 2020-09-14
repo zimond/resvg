@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use svgtypes::FuzzyZero;
 
@@ -48,7 +48,7 @@ pub struct PathData(pub Vec<PathSegment>);
 ///
 /// `PathData` is usually pretty big and it's expensive to clone it,
 /// so we are using `Rc`.
-pub type SharedPathData = Rc<PathData>;
+pub type SharedPathData = Arc<PathData>;
 
 impl PathData {
     /// Creates a new path.

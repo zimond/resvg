@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
+use std::sync ::Arc;
 
 use crate::{svgtree, tree, tree::prelude::*, utils};
 use super::prelude::*;
@@ -121,7 +121,7 @@ fn clip_element(
 
     clip_path.append_kind(tree::NodeKind::Path(tree::Path {
         fill: Some(tree::Fill::default()),
-        data: Rc::new(tree::PathData::from_rect(clip_rect)),
+        data: Arc::new(tree::PathData::from_rect(clip_rect)),
         ..tree::Path::default()
     }));
 

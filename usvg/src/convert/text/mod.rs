@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::{svgtree, tree, tree::prelude::*};
 use super::prelude::*;
@@ -245,7 +245,7 @@ fn convert_span(
         fill,
         stroke: span.stroke.take(),
         rendering_mode: tree::ShapeRendering::default(),
-        data: Rc::new(path_data),
+        data: Arc::new(path_data),
     };
 
     Some(path)
@@ -273,12 +273,12 @@ fn dump_cluster(
     // Cluster bbox.
     let r = Rect::new(0.0, -cluster.ascent, cluster.advance, cluster.height()).unwrap();
     base_path.stroke = new_stroke(tree::Color::blue());
-    base_path.data = Rc::new(tree::PathData::from_rect(r));
+    base_path.data = Arc::new(tree::PathData::from_rect(r));
     parent.append_kind(tree::NodeKind::Path(base_path.clone()));
 
     // Baseline.
     base_path.stroke = new_stroke(tree::Color::red());
-    base_path.data = Rc::new(tree::PathData(vec![
+    base_path.data = Arc::new(tree::PathData(vec![
         tree::PathSegment::MoveTo { x: 0.0,             y: 0.0 },
         tree::PathSegment::LineTo { x: cluster.advance, y: 0.0 },
     ]));
@@ -355,7 +355,7 @@ fn convert_decoration(
         visibility: span.visibility,
         fill: decoration.fill.take(),
         stroke: decoration.stroke.take(),
-        data: Rc::new(path),
+        data: Arc::new(path),
         .. tree::Path::default()
     }
 }
