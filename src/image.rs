@@ -2,13 +2,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use log::warn;
 use crate::render::prelude::*;
+use log::warn;
 
-pub fn draw(
-    image: &usvg::Image,
-    canvas: &mut skia::Canvas,
-) -> Rect {
+pub fn draw(image: &usvg::Image, canvas: &mut skia::Canvas) -> Rect {
     if image.visibility != usvg::Visibility::Visible {
         return image.view_box.rect;
     }
@@ -24,20 +21,76 @@ pub fn draw_kind(
     canvas: &mut skia::Canvas,
 ) {
     match kind {
-        usvg::ImageKind::JPEG(ref data) => {
-            match read_jpeg(data) {
-                Some(image) => draw_raster(&image, view_box, rendering_mode, canvas),
-                None => warn!("Failed to load an embedded image."),
+        usvg::ImageKind::JPEG(ref data) => match read_jpeg(data) {
+            Some(image) => draw_raster(&image, view_box, rendering_mode, canvas),
+            None => warn!("Failed to load an embedded image."),
+        },
+        usvg::ImageKind::PNG(ref data) => match read_png(data) {
+            Some(image) => draw_raster(&image, view_box, rendering_mode, canvas),
+            None => warn!("Failed to load an embedded image."),
+        },
+        usvg::ImageKind::SVG(ref subtree, ref opts) => {
+            if let Some(tree) = load_sub_svg(subtree, opts) {
+                draw_svg(&tree, view_box, canvas);
             }
         }
-        usvg::ImageKind::PNG(ref data) => {
-            match read_png(data) {
-                Some(image) => draw_raster(&image, view_box, rendering_mode, canvas),
-                None => warn!("Failed to load an embedded image."),
-            }
+    }
+}
+
+/// Tries to load the `ImageData` content as an SVG image.
+///
+/// Unlike `Tree::from_*` methods, this one will also remove all `image` elements
+/// from the loaded SVG, as required by the spec.
+pub fn load_sub_svg(data: &[u8], opt: &usvg::Options) -> Option<usvg::Tree> {
+    let sub_opt = usvg::Options {
+        path: None,
+        dpi: opt.dpi,
+        font_family: opt.font_family.clone(),
+        font_size: opt.font_size,
+        languages: opt.languages.clone(),
+        shape_rendering: opt.shape_rendering,
+        text_rendering: opt.text_rendering,
+        image_rendering: opt.image_rendering,
+        keep_named_groups: false,
+        #[cfg(feature = "text")]
+        fontdb: opt.fontdb.clone(),
+    };
+
+    let tree = match usvg::Tree::from_data(data, &sub_opt) {
+        Ok(tree) => tree,
+        Err(_) => {
+            warn!("Failed to load subsvg image.");
+            return None;
         }
-        usvg::ImageKind::SVG(ref subtree) => {
-            draw_svg(subtree, view_box, canvas);
+    };
+
+    sanitize_sub_svg(&tree);
+    Some(tree)
+}
+
+fn sanitize_sub_svg(tree: &usvg::Tree) {
+    // Remove all Image nodes.
+    //
+    // The referenced SVG image cannot have any 'image' elements by itself.
+    // Not only recursive. Any. Don't know why.
+
+    // TODO: implement drain or something to the rctree.
+    let mut changed = true;
+    while changed {
+        changed = false;
+
+        for mut node in tree.root().descendants() {
+            let mut rm = false;
+            // TODO: feImage?
+            if let usvg::NodeKind::Image(_) = *node.borrow() {
+                rm = true;
+            };
+
+            if rm {
+                node.detach();
+                changed = true;
+                break;
+            }
         }
     }
 }
@@ -51,14 +104,16 @@ fn draw_raster(
     let image = {
         let (w, h) = img.size.dimensions();
         let mut image = try_opt_warn_or!(
-            skia::Surface::new_rgba(w, h), (),
-            "Failed to create a {}x{} surface.", w, h
+            skia::Surface::new_rgba(w, h),
+            (),
+            "Failed to create a {}x{} surface.",
+            w,
+            h
         );
 
         image_to_surface(&img, &mut image.data_mut());
         image
     };
-
 
     let mut filter = skia::FilterQuality::Low;
     if rendering_mode == usvg::ImageRendering::OptimizeSpeed {
@@ -69,13 +124,21 @@ fn draw_raster(
 
     if view_box.aspect.slice {
         let r = view_box.rect;
-        canvas.set_clip_rect(r.x() as f32, r.y() as f32, r.width() as f32, r.height() as f32);
+        canvas.set_clip_rect(
+            r.x() as f32,
+            r.y() as f32,
+            r.width() as f32,
+            r.height() as f32,
+        );
     }
 
     let r = image_rect(&view_box, img.size);
     canvas.draw_surface_rect(
         &image,
-        r.x() as f32, r.y() as f32, r.width() as f32, r.height() as f32,
+        r.x() as f32,
+        r.y() as f32,
+        r.width() as f32,
+        r.height() as f32,
         filter,
     );
 
@@ -114,11 +177,7 @@ fn image_to_surface(image: &Image, surface: &mut [u8]) {
     }
 }
 
-fn draw_svg(
-    tree: &usvg::Tree,
-    view_box: usvg::ViewBox,
-    canvas: &mut skia::Canvas,
-) {
+fn draw_svg(tree: &usvg::Tree, view_box: usvg::ViewBox, canvas: &mut skia::Canvas) {
     let img_size = tree.svg_node().size.to_screen_size();
     let (ts, clip) = usvg::utils::view_box_to_transform_with_clip(&view_box, img_size);
 
@@ -126,7 +185,10 @@ fn draw_svg(
 
     if let Some(clip) = clip {
         canvas.set_clip_rect(
-            clip.x() as f32, clip.y() as f32, clip.width() as f32, clip.height() as f32,
+            clip.x() as f32,
+            clip.y() as f32,
+            clip.width() as f32,
+            clip.height() as f32,
         );
     }
 
@@ -141,7 +203,6 @@ struct Image {
     pub data: ImageData,
     pub size: ScreenSize,
 }
-
 
 /// A raster image data kind.
 enum ImageData {
@@ -186,14 +247,11 @@ fn read_png(data: &[u8]) -> Option<Image> {
         }
         png::ColorType::Indexed => {
             warn!("Indexed PNG is not supported.");
-            return None
+            return None;
         }
     };
 
-    Some(Image {
-        data,
-        size,
-    })
+    Some(Image { data, size })
 }
 
 fn read_jpeg(data: &[u8]) -> Option<Image> {
@@ -218,17 +276,11 @@ fn read_jpeg(data: &[u8]) -> Option<Image> {
         _ => return None,
     };
 
-    Some(Image {
-        data,
-        size,
-    })
+    Some(Image { data, size })
 }
 
 /// Calculates an image rect depending on the provided view box.
-fn image_rect(
-    view_box: &usvg::ViewBox,
-    img_size: ScreenSize,
-) -> Rect {
+fn image_rect(view_box: &usvg::ViewBox, img_size: ScreenSize) -> Rect {
     let new_size = img_size.fit_view_box(view_box);
     let (x, y) = usvg::utils::aligned_pos(
         view_box.aspect.align,

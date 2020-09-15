@@ -4,18 +4,11 @@
 
 use std::fmt;
 
-pub use svgtypes::{
-    Align,
-    AspectRatio,
-    Color,
-    FuzzyEq,
-    FuzzyZero,
-    Transform,
-};
+pub use svgtypes::{Align, AspectRatio, Color, FuzzyEq, FuzzyZero, Transform};
 
-use crate::geom::*;
 pub use super::numbers::*;
-
+use crate::geom::*;
+use crate::Options;
 
 macro_rules! impl_from_str {
     ($name:ident) => {
@@ -28,7 +21,6 @@ macro_rules! impl_from_str {
         }
     };
 }
-
 
 /// A line cap.
 ///
@@ -49,7 +41,6 @@ impl_enum_from_str!(LineCap,
     "square"    => LineCap::Square
 );
 
-
 /// A line join.
 ///
 /// `stroke-linejoin` attribute in the SVG.
@@ -69,7 +60,6 @@ impl_enum_from_str!(LineJoin,
     "bevel" => LineJoin::Bevel
 );
 
-
 /// A fill rule.
 ///
 /// `fill-rule` attribute in the SVG.
@@ -86,7 +76,6 @@ impl_enum_from_str!(FillRule,
     "nonzero" => FillRule::NonZero,
     "evenodd" => FillRule::EvenOdd
 );
-
 
 /// An element units.
 #[allow(missing_docs)]
@@ -122,7 +111,6 @@ impl_enum_from_str!(SpreadMethod,
     "repeat"    => SpreadMethod::Repeat
 );
 
-
 /// A visibility property.
 ///
 /// `visibility` attribute in the SVG.
@@ -142,7 +130,6 @@ impl_enum_from_str!(Visibility,
     "collapse"  => Visibility::Collapse
 );
 
-
 /// A paint style.
 ///
 /// `paint` value type in the SVG.
@@ -160,11 +147,10 @@ impl fmt::Debug for Paint {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Paint::Color(c) => write!(f, "Color({})", c),
-            Paint::Link(ref id)  => write!(f, "Link({})", id),
+            Paint::Link(ref id) => write!(f, "Link({})", id),
         }
     }
 }
-
 
 /// A fill style.
 #[allow(missing_docs)]
@@ -197,7 +183,6 @@ impl Default for Fill {
     }
 }
 
-
 /// A stroke style.
 #[allow(missing_docs)]
 #[derive(Clone, Debug)]
@@ -229,7 +214,6 @@ impl Default for Stroke {
     }
 }
 
-
 /// View box.
 #[derive(Clone, Copy, Debug)]
 pub struct ViewBox {
@@ -239,7 +223,6 @@ pub struct ViewBox {
     /// Value of the `preserveAspectRatio` attribute.
     pub aspect: AspectRatio,
 }
-
 
 /// Identifies input for a filter primitive.
 #[allow(missing_docs)]
@@ -253,7 +236,6 @@ pub enum FilterInput {
     StrokePaint,
     Reference(String),
 }
-
 
 /// A color interpolation mode.
 #[allow(missing_docs)]
@@ -270,7 +252,6 @@ impl_enum_from_str!(ColorInterpolation,
     "linearRGB" => ColorInterpolation::LinearRGB
 );
 
-
 /// A color channel.
 #[allow(missing_docs)]
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -281,7 +262,6 @@ pub enum ColorChannel {
     A,
 }
 
-
 /// An embedded image kind.
 #[derive(Clone)]
 pub enum ImageKind {
@@ -290,7 +270,7 @@ pub enum ImageKind {
     /// A raw PNG data. Should be decoded by the caller.
     PNG(Vec<u8>),
     /// A preprocessed SVG tree. Can be rendered as is.
-    SVG(crate::Tree),
+    SVG(Vec<u8>, Options),
 }
 
 impl fmt::Debug for ImageKind {
@@ -298,11 +278,10 @@ impl fmt::Debug for ImageKind {
         match self {
             ImageKind::JPEG(_) => f.write_str("ImageKind::JPEG(..)"),
             ImageKind::PNG(_) => f.write_str("ImageKind::PNG(..)"),
-            ImageKind::SVG(_) => f.write_str("ImageKind::SVG(..)"),
+            ImageKind::SVG(_, _) => f.write_str("ImageKind::SVG(..)"),
         }
     }
 }
-
 
 /// An images blending mode.
 #[allow(missing_docs)]
@@ -315,7 +294,6 @@ pub enum FeBlendMode {
     Lighten,
 }
 
-
 /// An images compositing operation.
 #[allow(missing_docs)]
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -325,14 +303,8 @@ pub enum FeCompositeOperator {
     Out,
     Atop,
     Xor,
-    Arithmetic {
-        k1: f64,
-        k2: f64,
-        k3: f64,
-        k4: f64,
-    },
+    Arithmetic { k1: f64, k2: f64, k3: f64, k4: f64 },
 }
-
 
 /// A morphology operation.
 #[allow(missing_docs)]
@@ -341,7 +313,6 @@ pub enum FeMorphologyOperator {
     Erode,
     Dilate,
 }
-
 
 /// Kind of the `feImage` data.
 #[derive(Clone, Debug)]
@@ -355,7 +326,6 @@ pub enum FeImageKind {
     Use(String),
 }
 
-
 /// An edges processing mode.
 #[allow(missing_docs)]
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -365,7 +335,6 @@ pub enum FeEdgeMode {
     Wrap,
 }
 
-
 /// A turbulence kind for the `feTurbulence` filter.
 #[allow(missing_docs)]
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -373,7 +342,6 @@ pub enum FeTurbulenceKind {
     FractalNoise,
     Turbulence,
 }
-
 
 /// A convolve matrix representation.
 ///
@@ -395,11 +363,14 @@ impl ConvolveMatrix {
     /// - `columns` * `rows` != `data.len()`
     /// - `target_x` >= `columns`
     /// - `target_y` >= `rows`
-    pub fn new(target_x: u32, target_y: u32, columns: u32, rows: u32, data: Vec<f64>) -> Option<Self> {
-        if (columns * rows) as usize != data.len()
-           || target_x >= columns
-           || target_y >= rows
-        {
+    pub fn new(
+        target_x: u32,
+        target_y: u32,
+        columns: u32,
+        rows: u32,
+        data: Vec<f64>,
+    ) -> Option<Self> {
+        if (columns * rows) as usize != data.len() || target_x >= columns || target_y >= rows {
             return None;
         }
 
@@ -461,7 +432,6 @@ impl ConvolveMatrix {
     }
 }
 
-
 /// A shape rendering method.
 ///
 /// `shape-rendering` attribute in the SVG.
@@ -477,9 +447,9 @@ impl ShapeRendering {
     /// Checks if anti-aliasing should be enabled.
     pub fn use_shape_antialiasing(self) -> bool {
         match self {
-            ShapeRendering::OptimizeSpeed         => false,
-            ShapeRendering::CrispEdges            => false,
-            ShapeRendering::GeometricPrecision    => true,
+            ShapeRendering::OptimizeSpeed => false,
+            ShapeRendering::CrispEdges => false,
+            ShapeRendering::GeometricPrecision => true,
         }
     }
 }
@@ -493,7 +463,6 @@ impl_enum_from_str!(ShapeRendering,
 );
 
 impl_from_str!(ShapeRendering);
-
 
 /// A text rendering method.
 ///
@@ -516,7 +485,6 @@ impl_enum_from_str!(TextRendering,
 
 impl_from_str!(TextRendering);
 
-
 /// An image rendering method.
 ///
 /// `image-rendering` attribute in the SVG.
@@ -535,7 +503,6 @@ impl_enum_from_str!(ImageRendering,
 );
 
 impl_from_str!(ImageRendering);
-
 
 /// An `enable-background`.
 ///

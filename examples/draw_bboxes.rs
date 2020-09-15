@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use usvg::{NodeExt, SystemFontDB};
 
@@ -39,14 +39,14 @@ fn main() {
     let stroke = Some(usvg::Stroke {
         paint: usvg::Paint::Color(usvg::Color::new(255, 0, 0)),
         opacity: 0.5.into(),
-        .. usvg::Stroke::default()
+        ..usvg::Stroke::default()
     });
 
     for bbox in bboxes {
         rtree.root().append_kind(usvg::NodeKind::Path(usvg::Path {
             stroke: stroke.clone(),
-            data: Rc::new(usvg::PathData::from_rect(bbox)),
-            .. usvg::Path::default()
+            data: Arc::new(usvg::PathData::from_rect(bbox)),
+            ..usvg::Path::default()
         }));
     }
 

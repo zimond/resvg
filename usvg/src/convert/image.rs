@@ -4,9 +4,8 @@
 
 use std::path;
 
-use crate::{svgtree, tree, tree::prelude::*, utils};
 use super::prelude::*;
-
+use crate::{svgtree, tree, tree::prelude::*, utils};
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 enum ImageFormat {
@@ -15,12 +14,7 @@ enum ImageFormat {
     SVG,
 }
 
-
-pub fn convert(
-    node: svgtree::Node,
-    state: &State,
-    parent: &mut tree::Node,
-) {
+pub fn convert(node: svgtree::Node, state: &State, parent: &mut tree::Node) {
     let visibility = node.find_attribute(AId::Visibility).unwrap_or_default();
     let rendering_mode = node
         .find_attribute(AId::ImageRendering)
@@ -55,30 +49,21 @@ pub fn convert(
     }));
 }
 
-pub fn get_href_data(
-    element_id: &str,
-    href: &str,
-    opt: &Options,
-) -> Option<tree::ImageKind> {
+pub fn get_href_data(element_id: &str, href: &str, opt: &Options) -> Option<tree::ImageKind> {
     if let Ok(url) = data_url::DataUrl::process(href) {
         let (data, _) = url.decode_to_vec().ok()?;
-        match (url.mime_type().type_.as_str(), url.mime_type().subtype.as_str()) {
+        match (
+            url.mime_type().type_.as_str(),
+            url.mime_type().subtype.as_str(),
+        ) {
             ("image", "jpg") | ("image", "jpeg") => Some(tree::ImageKind::JPEG(data)),
             ("image", "png") => Some(tree::ImageKind::PNG(data)),
-            ("image", "svg+xml") => load_sub_svg(&data, opt),
-            ("text", "plain") => {
-                match get_image_data_format(&data) {
-                    Some(ImageFormat::JPEG) => {
-                        Some(tree::ImageKind::JPEG(data))
-                    }
-                    Some(ImageFormat::PNG) => {
-                        Some(tree::ImageKind::PNG(data))
-                    }
-                    _ => {
-                        load_sub_svg(&data, opt)
-                    }
-                }
-            }
+            ("image", "svg+xml") => Some(tree::ImageKind::SVG(data.to_vec(), opt.clone())),
+            ("text", "plain") => match get_image_data_format(&data) {
+                Some(ImageFormat::JPEG) => Some(tree::ImageKind::JPEG(data)),
+                Some(ImageFormat::PNG) => Some(tree::ImageKind::PNG(data)),
+                _ => Some(tree::ImageKind::SVG(data.to_vec(), opt.clone())),
+            },
             _ => None,
         }
     } else {
@@ -97,22 +82,19 @@ pub fn get_href_data(
             };
 
             match get_image_file_format(&path, &data) {
-                Some(ImageFormat::JPEG) => {
-                    Some(tree::ImageKind::JPEG(data))
-                }
-                Some(ImageFormat::PNG) => {
-                    Some(tree::ImageKind::PNG(data))
-                }
-                Some(ImageFormat::SVG) => {
-                    load_sub_svg(&data, opt)
-                }
+                Some(ImageFormat::JPEG) => Some(tree::ImageKind::JPEG(data)),
+                Some(ImageFormat::PNG) => Some(tree::ImageKind::PNG(data)),
+                Some(ImageFormat::SVG) => Some(tree::ImageKind::SVG(data, opt.clone())),
                 _ => {
                     warn!("'{}' is not a PNG, JPEG or SVG(Z) image.", href);
                     None
                 }
             }
         } else {
-            warn!("Image '{}' has an invalid 'xlink:href' content.", element_id);
+            warn!(
+                "Image '{}' has an invalid 'xlink:href' content.",
+                element_id
+            );
             None
         }
     }
@@ -137,64 +119,5 @@ fn get_image_data_format(data: &[u8]) -> Option<ImageFormat> {
         Some(ImageFormat::JPEG)
     } else {
         None
-    }
-}
-
-
-/// Tries to load the `ImageData` content as an SVG image.
-///
-/// Unlike `Tree::from_*` methods, this one will also remove all `image` elements
-/// from the loaded SVG, as required by the spec.
-pub fn load_sub_svg(data: &[u8], opt: &Options) -> Option<tree::ImageKind> {
-    let sub_opt = Options {
-        path: None,
-        dpi: opt.dpi,
-        font_family: opt.font_family.clone(),
-        font_size: opt.font_size,
-        languages: opt.languages.clone(),
-        shape_rendering: opt.shape_rendering,
-        text_rendering: opt.text_rendering,
-        image_rendering: opt.image_rendering,
-        keep_named_groups: false,
-        #[cfg(feature = "text")]
-        fontdb: opt.fontdb.clone(),
-    };
-
-    let tree = match tree::Tree::from_data(data, &sub_opt) {
-        Ok(tree) => tree,
-        Err(_) => {
-            warn!("Failed to load subsvg image.");
-            return None;
-        }
-    };
-
-    sanitize_sub_svg(&tree);
-    Some(tree::ImageKind::SVG(tree))
-}
-
-fn sanitize_sub_svg(tree: &crate::Tree) {
-    // Remove all Image nodes.
-    //
-    // The referenced SVG image cannot have any 'image' elements by itself.
-    // Not only recursive. Any. Don't know why.
-
-    // TODO: implement drain or something to the rctree.
-    let mut changed = true;
-    while changed {
-        changed = false;
-
-        for mut node in tree.root().descendants() {
-            let mut rm = false;
-            // TODO: feImage?
-            if let tree::NodeKind::Image(_) = *node.borrow() {
-                rm = true;
-            };
-
-            if rm {
-                node.detach();
-                changed = true;
-                break;
-            }
-        }
     }
 }
