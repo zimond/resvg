@@ -271,6 +271,8 @@ pub enum ImageKind {
     PNG(Vec<u8>),
     /// A preprocessed SVG tree. Can be rendered as is.
     SVG(Vec<u8>, Options),
+    /// A raw BMP data, No need to decode
+    RAW(Vec<u8>),
 }
 
 impl fmt::Debug for ImageKind {
@@ -279,6 +281,7 @@ impl fmt::Debug for ImageKind {
             ImageKind::JPEG(_) => f.write_str("ImageKind::JPEG(..)"),
             ImageKind::PNG(_) => f.write_str("ImageKind::PNG(..)"),
             ImageKind::SVG(_, _) => f.write_str("ImageKind::SVG(..)"),
+            ImageKind::RAW(_) => f.write_str("ImageKind::RAW(..)"),
         }
     }
 }

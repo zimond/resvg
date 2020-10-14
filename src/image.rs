@@ -4,6 +4,7 @@
 
 use crate::render::prelude::*;
 use log::warn;
+use std::io::prelude::*;
 
 pub fn draw(image: &usvg::Image, canvas: &mut skia::Canvas) -> Rect {
     if image.visibility != usvg::Visibility::Visible {
@@ -34,6 +35,10 @@ pub fn draw_kind(
                 draw_svg(&tree, view_box, canvas);
             }
         }
+        usvg::ImageKind::RAW(ref data) => match read_raw(data) {
+            Some(image) => draw_raster(&image, view_box, rendering_mode, canvas),
+            None => warn!("Failed to load an embedded raw image."),
+        },
     }
 }
 
@@ -276,6 +281,23 @@ fn read_jpeg(data: &[u8]) -> Option<Image> {
         _ => return None,
     };
 
+    Some(Image { data, size })
+}
+
+fn read_raw(data: &[u8]) -> Option<Image> {
+    let mut r = data.clone();
+    let mut width_vec = [0u8; 4];
+    let mut height_vec = [0u8; 4];
+    r.read_exact(&mut width_vec).ok()?;
+    r.read_exact(&mut height_vec).ok()?;
+    let width: u32 = u32::from_be_bytes(width_vec);
+    let height: u32 = u32::from_be_bytes(height_vec);
+
+    let size = ScreenSize::new(width, height)?;
+
+    let mut rgba_vec = vec![0; (width * height * 4) as usize];
+    r.read_exact(&mut rgba_vec).ok()?;
+    let data = ImageData::RGBA(rgba_vec);
     Some(Image { data, size })
 }
 
