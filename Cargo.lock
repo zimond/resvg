@@ -159,9 +159,9 @@ checksum = "75224bec9bfe1a65e2d34132933f2de7fe79900c96a0174307554244ece8150e"
 
 [[package]]
 name = "fontdb"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "afa64e442fe4adbae6edd55ab3ebe905a858208db2aa12ab204e261890b69fd5"
+checksum = "80c798d52612851a39f84d857a8e63191103bfdf28baf10011720487043b7c15"
 dependencies = [
  "log",
  "memmap2",
@@ -491,9 +491,9 @@ dependencies = [
 
 [[package]]
 name = "ttf-parser"
-version = "0.6.2"
+version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e5d7cd7ab3e47dda6e56542f4bbf3824c15234958c6e1bd6aaa347e93499fdc"
+checksum = "d973cfa0e6124166b50a1105a67c85de40bbc625082f35c0f56f84cb1fb0a827"
 
 [[package]]
 name = "unicode-bidi"
@@ -526,7 +526,6 @@ dependencies = [
  "fontdb",
  "kurbo",
  "log",
- "memmap2",
  "pico-args",
  "rctree",
  "roxmltree",

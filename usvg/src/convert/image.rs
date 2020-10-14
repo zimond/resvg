@@ -59,6 +59,7 @@ pub fn get_href_data(element_id: &str, href: &str, opt: &Options) -> Option<tree
             ("image", "jpg") | ("image", "jpeg") => Some(tree::ImageKind::JPEG(data)),
             ("image", "png") => Some(tree::ImageKind::PNG(data)),
             ("image", "svg+xml") => Some(tree::ImageKind::SVG(data.to_vec(), opt.clone())),
+            ("image", "raw") => Some(tree::ImageKind::RAW(data)),
             ("text", "plain") => match get_image_data_format(&data) {
                 Some(ImageFormat::JPEG) => Some(tree::ImageKind::JPEG(data)),
                 Some(ImageFormat::PNG) => Some(tree::ImageKind::PNG(data)),
