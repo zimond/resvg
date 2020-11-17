@@ -8,7 +8,6 @@ use std::rc::Rc;
 
 use usvg::ScreenSize;
 
-
 type LayerData = Rc<RefCell<tiny_skia::Canvas>>; // TODO: store Pixmap
 
 /// Stack of image layers.
@@ -56,9 +55,7 @@ impl Layers {
                         _counter_holder: self.counter.clone(),
                     })
                 }
-                None => {
-                    None
-                }
+                None => None,
             }
         } else {
             {

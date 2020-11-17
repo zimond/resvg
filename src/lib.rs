@@ -16,7 +16,8 @@ pub use usvg::ScreenSize;
 use log::warn;
 use usvg::NodeExt;
 
-#[macro_use] mod macros;
+#[macro_use]
+mod macros;
 mod clip;
 mod filter;
 mod image;
@@ -102,8 +103,8 @@ pub fn render(
     fit_to: usvg::FitTo,
     background: Option<usvg::Color>,
 ) -> Option<Image> {
-    let (mut canvas, size)
-        = render::create_root_image(tree.svg_node().size.to_screen_size(), fit_to, background)?;
+    let (mut canvas, size) =
+        render::create_root_image(tree.svg_node().size.to_screen_size(), fit_to, background)?;
     render::render_to_canvas(tree, size, &mut canvas);
     Some(Image::from_canvas(canvas))
 }

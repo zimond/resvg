@@ -8,7 +8,6 @@ use svgtypes::FuzzyEq;
 
 use crate::{tree, IsValidLength};
 
-
 /// Line representation.
 #[allow(missing_docs)]
 #[derive(Clone, Copy, Debug)]
@@ -31,24 +30,25 @@ impl Line {
     pub fn length(&self) -> f64 {
         let x = self.x2 - self.x1;
         let y = self.y2 - self.y1;
-        (x*x + y*y).sqrt()
+        (x * x + y * y).sqrt()
     }
 
     /// Sets the line length.
     pub fn set_length(&mut self, len: f64) {
         let x = self.x2 - self.x1;
         let y = self.y2 - self.y1;
-        let len2 = (x*x + y*y).sqrt();
+        let len2 = (x * x + y * y).sqrt();
         let line = Line {
-            x1: self.x1, y1: self.y1,
-            x2: self.x1 + x/len2, y2: self.y1 + y/len2
+            x1: self.x1,
+            y1: self.y1,
+            x2: self.x1 + x / len2,
+            y2: self.y1 + y / len2,
         };
 
         self.x2 = self.x1 + (line.x2 - line.x1) * len;
         self.y2 = self.y1 + (line.y2 - line.y1) * len;
     }
 }
-
 
 /// A 2D point representation.
 #[derive(Clone, Copy)]
@@ -78,7 +78,6 @@ impl<T: fmt::Display> fmt::Display for Point<T> {
         write!(f, "{:?}", self)
     }
 }
-
 
 /// A 2D size representation.
 ///
@@ -118,7 +117,8 @@ impl Size {
         ScreenSize::new(
             cmp::max(1, self.width().round() as u32),
             cmp::max(1, self.height().round() as u32),
-        ).unwrap()
+        )
+        .unwrap()
     }
 
     /// Converts the current size to `Rect` at provided position.
@@ -143,11 +143,9 @@ impl fmt::Display for Size {
 impl FuzzyEq for Size {
     #[inline]
     fn fuzzy_eq(&self, other: &Self) -> bool {
-           self.width.fuzzy_eq(&other.width)
-        && self.height.fuzzy_eq(&other.height)
+        self.width.fuzzy_eq(&other.width) && self.height.fuzzy_eq(&other.height)
     }
 }
-
 
 /// A 2D screen size representation.
 ///
@@ -235,13 +233,13 @@ impl fmt::Display for ScreenSize {
     }
 }
 
-fn size_scale(
-    s1: ScreenSize,
-    s2: ScreenSize,
-    expand: bool,
-) -> ScreenSize {
+fn size_scale(s1: ScreenSize, s2: ScreenSize, expand: bool) -> ScreenSize {
     let rw = (s2.height as f64 * s1.width as f64 / s1.height as f64).ceil() as u32;
-    let with_h = if expand { rw <= s2.width } else { rw >= s2.width };
+    let with_h = if expand {
+        rw <= s2.width
+    } else {
+        rw >= s2.width
+    };
     if !with_h {
         ScreenSize::new(rw, s2.height).unwrap()
     } else {
@@ -249,7 +247,6 @@ fn size_scale(
         ScreenSize::new(s2.width, h).unwrap()
     }
 }
-
 
 /// A rect representation.
 ///
@@ -267,7 +264,12 @@ impl Rect {
     #[inline]
     pub fn new(x: f64, y: f64, width: f64, height: f64) -> Option<Self> {
         if width.is_valid_length() && height.is_valid_length() {
-            Some(Rect { x, y, width, height })
+            Some(Rect {
+                x,
+                y,
+                width,
+                height,
+            })
         } else {
             None
         }
@@ -376,12 +378,20 @@ impl Rect {
     pub fn expand(&self, r: Rect) -> Self {
         #[inline]
         fn f64_min(v1: f64, v2: f64) -> f64 {
-            if v1 < v2 { v1 } else { v2 }
+            if v1 < v2 {
+                v1
+            } else {
+                v2
+            }
         }
 
         #[inline]
         fn f64_max(v1: f64, v2: f64) -> f64 {
-            if v1 > v2 { v1 } else { v2 }
+            if v1 > v2 {
+                v1
+            } else {
+                v2
+            }
         }
 
         if self.fuzzy_eq(&Rect::new_bbox()) {
@@ -413,16 +423,20 @@ impl Rect {
         if !ts.is_default() {
             let path = &[
                 tree::PathSegment::MoveTo {
-                    x: self.x(), y: self.y()
+                    x: self.x(),
+                    y: self.y(),
                 },
                 tree::PathSegment::LineTo {
-                    x: self.right(), y: self.y()
+                    x: self.right(),
+                    y: self.y(),
                 },
                 tree::PathSegment::LineTo {
-                    x: self.right(), y: self.bottom()
+                    x: self.right(),
+                    y: self.bottom(),
                 },
                 tree::PathSegment::LineTo {
-                    x: self.x(), y: self.bottom()
+                    x: self.x(),
+                    y: self.bottom(),
                 },
                 tree::PathSegment::ClosePath,
             ];
@@ -447,23 +461,28 @@ impl Rect {
             self.y() as i32,
             cmp::max(1, self.width().round() as u32),
             cmp::max(1, self.height().round() as u32),
-        ).unwrap()
+        )
+        .unwrap()
     }
 }
 
 impl FuzzyEq for Rect {
     #[inline]
     fn fuzzy_eq(&self, other: &Self) -> bool {
-           self.x.fuzzy_eq(&other.x)
-        && self.y.fuzzy_eq(&other.y)
-        && self.width.fuzzy_eq(&other.width)
-        && self.height.fuzzy_eq(&other.height)
+        self.x.fuzzy_eq(&other.x)
+            && self.y.fuzzy_eq(&other.y)
+            && self.width.fuzzy_eq(&other.width)
+            && self.height.fuzzy_eq(&other.height)
     }
 }
 
 impl fmt::Debug for Rect {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Rect({} {} {} {})", self.x, self.y, self.width, self.height)
+        write!(
+            f,
+            "Rect({} {} {} {})",
+            self.x, self.y, self.width, self.height
+        )
     }
 }
 
@@ -472,7 +491,6 @@ impl fmt::Display for Rect {
         write!(f, "{:?}", self)
     }
 }
-
 
 /// A 2D screen rect representation.
 ///
@@ -491,7 +509,12 @@ impl ScreenRect {
     #[inline]
     pub fn new(x: i32, y: i32, width: u32, height: u32) -> Option<Self> {
         if width > 0 && height > 0 {
-            Some(ScreenRect { x, y, width, height })
+            Some(ScreenRect {
+                x,
+                y,
+                width,
+                height,
+            })
         } else {
             None
         }
@@ -593,8 +616,12 @@ impl ScreenRect {
     pub fn fit_to_rect(&self, bounds: ScreenRect) -> Self {
         let mut r = *self;
 
-        if r.x < 0 { r.x = 0; }
-        if r.y < 0 { r.y = 0; }
+        if r.x < 0 {
+            r.x = 0;
+        }
+        if r.y < 0 {
+            r.y = 0;
+        }
 
         if r.right() > bounds.width as i32 {
             r.width = cmp::max(1, bounds.width as i32 - r.x) as u32;
@@ -611,13 +638,23 @@ impl ScreenRect {
     #[inline]
     pub fn to_rect(&self) -> Rect {
         // Can't fail, because `ScreenRect` is always valid.
-        Rect::new(self.x as f64, self.y as f64, self.width as f64, self.height as f64).unwrap()
+        Rect::new(
+            self.x as f64,
+            self.y as f64,
+            self.width as f64,
+            self.height as f64,
+        )
+        .unwrap()
     }
 }
 
 impl fmt::Debug for ScreenRect {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "ScreenRect({} {} {} {})", self.x, self.y, self.width, self.height)
+        write!(
+            f,
+            "ScreenRect({} {} {} {})",
+            self.x, self.y, self.width, self.height
+        )
     }
 }
 
@@ -627,7 +664,6 @@ impl fmt::Display for ScreenRect {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -635,7 +671,8 @@ mod tests {
     #[test]
     fn bbox_transform_1() {
         let r = Rect::new(10.0, 20.0, 30.0, 40.0).unwrap();
-        assert!(r.bbox_transform(Rect::new(0.2, 0.3, 0.4, 0.5).unwrap())
+        assert!(r
+            .bbox_transform(Rect::new(0.2, 0.3, 0.4, 0.5).unwrap())
             .fuzzy_eq(&Rect::new(4.2, 10.3, 12.0, 20.0).unwrap()));
     }
 }

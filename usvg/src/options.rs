@@ -4,8 +4,7 @@
 
 use std::path::PathBuf;
 
-use crate::{ImageRendering, ShapeRendering, TextRendering, Size, ScreenSize};
-
+use crate::{ImageRendering, ScreenSize, ShapeRendering, Size, TextRendering};
 
 /// Image fit options.
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -26,9 +25,7 @@ impl FitTo {
         let sizef = size.to_size();
 
         match *self {
-            FitTo::Original => {
-                Some(size)
-            }
+            FitTo::Original => Some(size),
             FitTo::Width(w) => {
                 let h = (w as f64 * sizef.height() / sizef.width()).ceil();
                 ScreenSize::new(w, h as u32)
@@ -37,14 +34,11 @@ impl FitTo {
                 let w = (h as f64 * sizef.width() / sizef.height()).ceil();
                 ScreenSize::new(w as u32, h)
             }
-            FitTo::Zoom(z) => {
-                Size::new(sizef.width() * z as f64, sizef.height() * z as f64)
-                    .map(|s| s.to_screen_size())
-            }
+            FitTo::Zoom(z) => Size::new(sizef.width() * z as f64, sizef.height() * z as f64)
+                .map(|s| s.to_screen_size()),
         }
     }
 }
-
 
 /// Processing options.
 #[derive(Clone, Debug)]

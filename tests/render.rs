@@ -1,6 +1,6 @@
-use std::path::{Path, PathBuf};
-use rgb::FromSlice;
 use rayon::prelude::*;
+use rgb::FromSlice;
+use std::path::{Path, PathBuf};
 
 const IMAGE_SIZE: u32 = 300;
 
@@ -25,11 +25,10 @@ fn render() {
 
     let ignore = &[
         "e-feMorphology-012", // will timeout on CI
-        "e-svg-007", // invalid encoding
-        "e-svg-034", // invalid size
-        "e-svg-035", // invalid size
-        "e-svg-036", // invalid size
-
+        "e-svg-007",          // invalid encoding
+        "e-svg-034",          // invalid size
+        "e-svg-035",          // invalid size
+        "e-svg-036",          // invalid size
         "e-svg-009",
         "e-svg-010",
         "e-svg-011",
@@ -37,18 +36,20 @@ fn render() {
         "e-svg-017",
     ];
 
-    let results: Vec<_> = files.into_par_iter().map(|svg_path| {
-        let file_name = svg_path.file_stem().unwrap().to_str().unwrap().to_owned();
+    let results: Vec<_> = files
+        .into_par_iter()
+        .map(|svg_path| {
+            let file_name = svg_path.file_stem().unwrap().to_str().unwrap().to_owned();
 
-        if ignore.contains(&file_name.as_str()) {
-            return Ok(());
-        }
+            if ignore.contains(&file_name.as_str()) {
+                return Ok(());
+            }
 
-        let png_path = PathBuf::from(format!("tests/png/{}.png", file_name));
+            let png_path = PathBuf::from(format!("tests/png/{}.png", file_name));
 
-        process(&file_name, &svg_path, &png_path, &opt)
-            .map_err(|e| Error::new(e, &file_name))
-    }).collect();
+            process(&file_name, &svg_path, &png_path, &opt).map_err(|e| Error::new(e, &file_name))
+        })
+        .collect();
 
     let mut has_errors = false;
     for res in results {
@@ -85,7 +86,6 @@ impl From<png::EncodingError> for ErrorKind {
     }
 }
 
-
 #[derive(Debug)]
 struct Error {
     kind: ErrorKind,
@@ -94,22 +94,21 @@ struct Error {
 
 impl Error {
     fn new(kind: ErrorKind, file_name: &str) -> Self {
-        Error { kind, file_name: file_name.to_owned() }
+        Error {
+            kind,
+            file_name: file_name.to_owned(),
+        }
     }
 }
 
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.kind {
-            ErrorKind::Panicked => {
-                write!(f, "{} panicked", self.file_name)
-            }
+            ErrorKind::Panicked => write!(f, "{} panicked", self.file_name),
             ErrorKind::ParsingFailed(ref e) => {
                 write!(f, "{} parsing failed cause {}", self.file_name, e)
             }
-            ErrorKind::RenderingFailed => {
-                write!(f, "{} rendering parsing", self.file_name)
-            }
+            ErrorKind::RenderingFailed => write!(f, "{} rendering parsing", self.file_name),
             ErrorKind::DifferentImageSizes => {
                 write!(f, "{} was rendered with different sizes", self.file_name)
             }
@@ -130,9 +129,12 @@ fn process(
     opt: &usvg::Options,
 ) -> Result<(), ErrorKind> {
     let img = std::panic::catch_unwind(move || {
-        let tree = usvg::Tree::from_file(&svg_path, &opt).map_err(|e| ErrorKind::ParsingFailed(e))?;
-        resvg::render(&tree, usvg::FitTo::Width(IMAGE_SIZE), None).ok_or_else(|| ErrorKind::RenderingFailed)
-    }).map_err(|_| ErrorKind::Panicked)??;
+        let tree =
+            usvg::Tree::from_file(&svg_path, &opt).map_err(|e| ErrorKind::ParsingFailed(e))?;
+        resvg::render(&tree, usvg::FitTo::Width(IMAGE_SIZE), None)
+            .ok_or_else(|| ErrorKind::RenderingFailed)
+    })
+    .map_err(|_| ErrorKind::Panicked)??;
 
     let expected_data = load_png(png_path);
     if expected_data.len() != img.data().len() {
@@ -140,7 +142,12 @@ fn process(
     }
 
     let mut pixels_d = 0;
-    for (a, b) in expected_data.as_slice().as_rgba().iter().zip(img.data().as_rgba()) {
+    for (a, b) in expected_data
+        .as_slice()
+        .as_rgba()
+        .iter()
+        .zip(img.data().as_rgba())
+    {
         // Sadly, Skia can produce slightly different results on different OS'es/hardware.
         // Not sure why. Because of that, we have to use approximate comparison.
         if is_pix_diff(*a, *b) {
@@ -170,9 +177,7 @@ fn load_png(path: &Path) -> Vec<u8> {
         png::ColorType::RGB => {
             panic!("RGB PNG is not supported.");
         }
-        png::ColorType::RGBA => {
-            img_data
-        }
+        png::ColorType::RGBA => img_data,
         png::ColorType::Grayscale => {
             let mut rgba_data = Vec::with_capacity(img_data.len() * 4);
             for gray in img_data {
@@ -233,8 +238,8 @@ fn gen_diff(name: &str, img1: &[u8], img2: &[u8]) -> Result<(), png::EncodingErr
 
 // A pixel can have a slightly different channel color due to rounding, I guess.
 fn is_pix_diff(c1: rgb::RGBA8, c2: rgb::RGBA8) -> bool {
-    (c1.r as i32 - c2.r as i32).abs() > 1 ||
-    (c1.g as i32 - c2.g as i32).abs() > 1 ||
-    (c1.b as i32 - c2.b as i32).abs() > 1 ||
-    (c1.a as i32 - c2.a as i32).abs() > 1
+    (c1.r as i32 - c2.r as i32).abs() > 1
+        || (c1.g as i32 - c2.g as i32).abs() > 1
+        || (c1.b as i32 - c2.b as i32).abs() > 1
+        || (c1.a as i32 - c2.a as i32).abs() > 1
 }

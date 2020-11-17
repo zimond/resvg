@@ -3,8 +3,9 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 pub(crate) mod prelude {
-    pub(crate) use crate::layers::Layers;
     pub(crate) use super::*;
+    pub(crate) use crate::layers::Layers;
+    pub(crate) use usvg::*;
 }
 
 use prelude::*;
@@ -28,25 +29,32 @@ pub(crate) trait ConvTransform {
 impl ConvTransform for usvg::Transform {
     fn to_native(&self) -> tiny_skia::Transform {
         tiny_skia::Transform::from_row(
-            self.a as f32, self.b as f32,
-            self.c as f32, self.d as f32,
-            self.e as f32, self.f as f32,
-        ).unwrap()
+            self.a as f32,
+            self.b as f32,
+            self.c as f32,
+            self.d as f32,
+            self.e as f32,
+            self.f as f32,
+        )
+        .unwrap()
     }
 
     fn from_native(ts: tiny_skia::Transform) -> Self {
         let (sx, ky, kx, sy, tx, ty) = ts.get_row();
-        Self::new(sx as f64, ky as f64, kx as f64, sy as f64, tx as f64, ty as f64)
+        Self::new(
+            sx as f64, ky as f64, kx as f64, sy as f64, tx as f64, ty as f64,
+        )
     }
 }
 
-
-pub(crate) fn render_to_canvas(
-    tree: &usvg::Tree,
-    img_size: ScreenSize,
-    canvas: &mut tiny_skia::Canvas,
-) {
-    render_node_to_canvas(&tree.root(), tree.svg_node().view_box, img_size, &mut RenderState::Ok, canvas);
+pub fn render_to_canvas(tree: &usvg::Tree, img_size: ScreenSize, canvas: &mut tiny_skia::Canvas) {
+    render_node_to_canvas(
+        &tree.root(),
+        tree.svg_node().view_box,
+        img_size,
+        &mut RenderState::Ok,
+        canvas,
+    );
 }
 
 pub(crate) fn render_node_to_canvas(
@@ -80,7 +88,9 @@ pub fn create_root_image(
     let mut canvas = tiny_skia::Canvas::new(img_size.width(), img_size.height())?;
 
     if let Some(c) = background {
-        canvas.pixmap.fill(tiny_skia::Color::from_rgba8(c.red, c.green, c.blue, 255));
+        canvas
+            .pixmap
+            .fill(tiny_skia::Color::from_rgba8(c.red, c.green, c.blue, 255));
     }
 
     Some((canvas, img_size))
@@ -196,11 +206,20 @@ fn render_group_impl(
             if let usvg::NodeKind::Filter(ref filter) = *filter_node.borrow() {
                 let ts = usvg::Transform::from_native(curr_ts);
                 let background = prepare_filter_background(node, filter, layers.image_size());
-                let fill_paint = prepare_filter_fill_paint(node, filter, bbox, ts, &sub_canvas.pixmap);
-                let stroke_paint = prepare_filter_stroke_paint(node, filter, bbox, ts, &sub_canvas.pixmap);
-                crate::filter::apply(filter, bbox, &ts, &node.tree(),
-                                     background.as_ref(), fill_paint.as_ref(), stroke_paint.as_ref(),
-                                     &mut sub_canvas);
+                let fill_paint =
+                    prepare_filter_fill_paint(node, filter, bbox, ts, &sub_canvas.pixmap);
+                let stroke_paint =
+                    prepare_filter_stroke_paint(node, filter, bbox, ts, &sub_canvas.pixmap);
+                crate::filter::apply(
+                    filter,
+                    bbox,
+                    &ts,
+                    &node.tree(),
+                    background.as_ref(),
+                    fill_paint.as_ref(),
+                    stroke_paint.as_ref(),
+                    &mut sub_canvas,
+                );
             }
         }
     }
@@ -279,12 +298,24 @@ fn prepare_filter_fill_paint(
         if let Some(paint) = g.filter_fill.clone() {
             let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
 
-            let rect = tiny_skia::Rect::from_xywh(0.0, 0.0, region.width() as f32, region.height() as f32)?;
+            let rect = tiny_skia::Rect::from_xywh(
+                0.0,
+                0.0,
+                region.width() as f32,
+                region.height() as f32,
+            )?;
             let path = tiny_skia::PathBuilder::from_rect(rect);
 
             let fill = usvg::Fill::from_paint(paint);
-            crate::paint_server::fill(&parent.tree(), &fill, style_bbox, &path, true, tiny_skia::BlendMode::SourceOver, &mut sub_canvas);
-
+            crate::paint_server::fill(
+                &parent.tree(),
+                &fill,
+                style_bbox,
+                &path,
+                true,
+                tiny_skia::BlendMode::SourceOver,
+                &mut sub_canvas,
+            );
         }
     }
 
@@ -305,11 +336,24 @@ fn prepare_filter_stroke_paint(
         if let Some(paint) = g.filter_stroke.clone() {
             let style_bbox = bbox.unwrap_or_else(|| Rect::new(0.0, 0.0, 1.0, 1.0).unwrap());
 
-            let rect = tiny_skia::Rect::from_xywh(0.0, 0.0, region.width() as f32, region.height() as f32)?;
+            let rect = tiny_skia::Rect::from_xywh(
+                0.0,
+                0.0,
+                region.width() as f32,
+                region.height() as f32,
+            )?;
             let path = tiny_skia::PathBuilder::from_rect(rect);
 
             let fill = usvg::Fill::from_paint(paint);
-            crate::paint_server::fill(&parent.tree(), &fill, style_bbox, &path, true, tiny_skia::BlendMode::SourceOver, &mut sub_canvas);
+            crate::paint_server::fill(
+                &parent.tree(),
+                &fill,
+                style_bbox,
+                &path,
+                true,
+                tiny_skia::BlendMode::SourceOver,
+                &mut sub_canvas,
+            );
         }
     }
 

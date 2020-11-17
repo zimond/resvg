@@ -33,8 +33,8 @@ pub fn fill(
                     }
                     usvg::NodeKind::Pattern(ref pattern) => {
                         let global_ts = usvg::Transform::from_native(canvas.get_transform());
-                        let (patt_pix, patt_ts)
-                            = try_opt!(prepare_pattern_pixmap(&node, pattern, &global_ts, bbox));
+                        let (patt_pix, patt_ts) =
+                            try_opt!(prepare_pattern_pixmap(&node, pattern, &global_ts, bbox));
 
                         pattern_pixmap = patt_pix;
                         paint.shader = prepare_pattern(&pattern_pixmap, patt_ts, opacity);
@@ -88,8 +88,8 @@ pub fn stroke(
                         }
                         usvg::NodeKind::Pattern(ref pattern) => {
                             let global_ts = usvg::Transform::from_native(canvas.get_transform());
-                            let (patt_pix, patt_ts)
-                                = try_opt!(prepare_pattern_pixmap(&node, pattern, &global_ts, bbox));
+                            let (patt_pix, patt_ts) =
+                                try_opt!(prepare_pattern_pixmap(&node, pattern, &global_ts, bbox));
 
                             pattern_pixmap = patt_pix;
                             paint.shader = prepare_pattern(&pattern_pixmap, patt_ts, opacity);
@@ -154,8 +154,16 @@ fn prepare_linear(
     let mut points = Vec::with_capacity(g.stops.len());
     for stop in &g.stops {
         let a = stop.opacity * opacity;
-        let color = tiny_skia::Color::from_rgba8(stop.color.red, stop.color.green, stop.color.blue, a.to_u8());
-        points.push(tiny_skia::GradientStop::new(stop.offset.value() as f32, color))
+        let color = tiny_skia::Color::from_rgba8(
+            stop.color.red,
+            stop.color.green,
+            stop.color.blue,
+            a.to_u8(),
+        );
+        points.push(tiny_skia::GradientStop::new(
+            stop.offset.value() as f32,
+            color,
+        ))
     }
 
     let gradient = tiny_skia::LinearGradient::new(
@@ -196,8 +204,16 @@ fn prepare_radial(
     let mut points = Vec::with_capacity(g.stops.len());
     for stop in &g.stops {
         let a = stop.opacity * opacity;
-        let color = tiny_skia::Color::from_rgba8(stop.color.red, stop.color.green, stop.color.blue, a.to_u8());
-        points.push(tiny_skia::GradientStop::new(stop.offset.value() as f32, color))
+        let color = tiny_skia::Color::from_rgba8(
+            stop.color.red,
+            stop.color.green,
+            stop.color.blue,
+            a.to_u8(),
+        );
+        points.push(tiny_skia::GradientStop::new(
+            stop.offset.value() as f32,
+            color,
+        ))
     }
 
     let gradient = tiny_skia::RadialGradient::new(

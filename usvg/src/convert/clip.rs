@@ -2,16 +2,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::tree;
-use crate::svgtree;
 use super::prelude::*;
+use crate::svgtree;
+use crate::tree;
 
-
-pub fn convert(
-    node: svgtree::Node,
-    state: &State,
-    tree: &mut tree::Tree,
-) -> Option<String> {
+pub fn convert(node: svgtree::Node, state: &State, tree: &mut tree::Tree) -> Option<String> {
     // A `clip-path` attribute must reference a `clipPath` element.
     if !node.has_tag_name(EId::ClipPath) {
         return None;
@@ -39,15 +34,15 @@ pub fn convert(
         }
     }
 
-    let units = node.attribute(AId::ClipPathUnits).unwrap_or(tree::Units::UserSpaceOnUse);
-    let mut clip = tree.append_to_defs(
-        tree::NodeKind::ClipPath(tree::ClipPath {
-            id: node.element_id().to_string(),
-            units,
-            transform: node.attribute(AId::Transform).unwrap_or_default(),
-            clip_path,
-        })
-    );
+    let units = node
+        .attribute(AId::ClipPathUnits)
+        .unwrap_or(tree::Units::UserSpaceOnUse);
+    let mut clip = tree.append_to_defs(tree::NodeKind::ClipPath(tree::ClipPath {
+        id: node.element_id().to_string(),
+        units,
+        transform: node.attribute(AId::Transform).unwrap_or_default(),
+        clip_path,
+    }));
 
     let mut clip_state = state.clone();
     clip_state.parent_clip_path = Some(node);

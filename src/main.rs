@@ -12,7 +12,11 @@ macro_rules! timed {
         if $args.perf {
             let now = std::time::Instant::now();
             let res = $task;
-            println!("{}: {:.2}ms", $name, now.elapsed().as_micros() as f64 / 1000.0);
+            println!(
+                "{}: {:.2}ms",
+                $name,
+                now.elapsed().as_micros() as f64 / 1000.0
+            );
             res
         } else {
             $task
@@ -46,7 +50,9 @@ fn process() -> Result<(), String> {
     }
 
     // Load file.
-    let tree = timed!(args, "Preprocessing",
+    let tree = timed!(
+        args,
+        "Preprocessing",
         usvg::Tree::from_file(&args.in_svg, &args.usvg).map_err(|e| e.to_string())
     )?;
 
@@ -87,9 +93,12 @@ fn query_all(tree: &usvg::Tree) -> Result<(), String> {
 
         if let Some(bbox) = node.calculate_bbox() {
             println!(
-                "{},{},{},{},{}", node.id(),
-                round_len(bbox.x()), round_len(bbox.y()),
-                round_len(bbox.width()), round_len(bbox.height())
+                "{},{},{},{},{}",
+                node.id(),
+                round_len(bbox.x()),
+                round_len(bbox.y()),
+                round_len(bbox.width()),
+                round_len(bbox.height())
             );
         }
     }
@@ -104,37 +113,41 @@ fn query_all(tree: &usvg::Tree) -> Result<(), String> {
 fn render_svg(args: Args, tree: &usvg::Tree, out_png: &path::Path) -> Result<(), String> {
     let img = if let Some(ref id) = args.export_id {
         if let Some(node) = tree.root().descendants().find(|n| &*n.id() == id) {
-            timed!(args, "Rendering",
-                resvg::render_node(&node, args.fit_to, args.background))
+            timed!(
+                args,
+                "Rendering",
+                resvg::render_node(&node, args.fit_to, args.background)
+            )
         } else {
             return Err(format!("SVG doesn't have '{}' ID", id));
         }
     } else {
-        timed!(args, "Rendering",
-            resvg::render(&tree, args.fit_to, args.background))
+        timed!(
+            args,
+            "Rendering",
+            resvg::render(&tree, args.fit_to, args.background)
+        )
     };
 
     match img {
-        Some(img) => {
-            timed!(args, "Saving",
-                img.save_png(out_png).map_err(|e| e.to_string()))
-        }
-        None => {
-            Err("failed to allocate an image".to_string())
-        }
+        Some(img) => timed!(
+            args,
+            "Saving",
+            img.save_png(out_png).map_err(|e| e.to_string())
+        ),
+        None => Err("failed to allocate an image".to_string()),
     }
 }
 
 fn dump_svg(tree: &usvg::Tree, path: &path::Path) -> Result<(), String> {
-    let mut f = std::fs::File::create(path)
-        .map_err(|_| format!("failed to create a file {:?}", path))?;
+    let mut f =
+        std::fs::File::create(path).map_err(|_| format!("failed to create a file {:?}", path))?;
 
     f.write_all(tree.to_string(usvg::XmlOptions::default()).as_bytes())
         .map_err(|_| format!("failed to write a file {:?}", path))?;
 
     Ok(())
 }
-
 
 const HELP: &str = "\
 resvg is an SVG rendering application.
@@ -259,41 +272,50 @@ struct CliArgs {
 fn collect_args() -> Result<CliArgs, pico_args::Error> {
     let mut input = pico_args::Arguments::from_env();
     Ok(CliArgs {
-        help:               input.contains("--help"),
-        version:            input.contains(["-V", "--version"]),
+        help: input.contains("--help"),
+        version: input.contains(["-V", "--version"]),
 
-        width:              input.opt_value_from_fn(["-w", "--width"], parse_length)?,
-        height:             input.opt_value_from_fn(["-h", "--height"], parse_length)?,
-        zoom:               input.opt_value_from_fn(["-z", "--zoom"], parse_zoom)?,
-        dpi:                input.opt_value_from_fn("--dpi", parse_dpi)?.unwrap_or(96),
-        background:         input.opt_value_from_str("--background")?,
+        width: input.opt_value_from_fn(["-w", "--width"], parse_length)?,
+        height: input.opt_value_from_fn(["-h", "--height"], parse_length)?,
+        zoom: input.opt_value_from_fn(["-z", "--zoom"], parse_zoom)?,
+        dpi: input.opt_value_from_fn("--dpi", parse_dpi)?.unwrap_or(96),
+        background: input.opt_value_from_str("--background")?,
 
-        languages:          input.opt_value_from_fn("--languages", parse_languages)?
+        languages: input
+            .opt_value_from_fn("--languages", parse_languages)?
             .unwrap_or(vec!["en".to_string()]), // TODO: use system language
-        shape_rendering:    input.opt_value_from_str("--shape-rendering")?.unwrap_or_default(),
-        text_rendering:     input.opt_value_from_str("--text-rendering")?.unwrap_or_default(),
-        image_rendering:    input.opt_value_from_str("--image-rendering")?.unwrap_or_default(),
+        shape_rendering: input
+            .opt_value_from_str("--shape-rendering")?
+            .unwrap_or_default(),
+        text_rendering: input
+            .opt_value_from_str("--text-rendering")?
+            .unwrap_or_default(),
+        image_rendering: input
+            .opt_value_from_str("--image-rendering")?
+            .unwrap_or_default(),
 
-        font_family:        input.opt_value_from_str("--font-family")?,
-        font_size:          input.opt_value_from_fn("--font-size", parse_font_size)?.unwrap_or(12),
-        serif_family:       input.opt_value_from_str("--serif-family")?,
-        sans_serif_family:  input.opt_value_from_str("--sans-serif-family")?,
-        cursive_family:     input.opt_value_from_str("--cursive-family")?,
-        fantasy_family:     input.opt_value_from_str("--fantasy-family")?,
-        monospace_family:   input.opt_value_from_str("--monospace-family")?,
-        font_files:         input.values_from_str("--use-font-file")?,
-        font_dirs:          input.values_from_str("--use-fonts-dir")?,
-        skip_system_fonts:  input.contains("--skip-system-fonts"),
-        list_fonts:         input.contains("--list-fonts"),
+        font_family: input.opt_value_from_str("--font-family")?,
+        font_size: input
+            .opt_value_from_fn("--font-size", parse_font_size)?
+            .unwrap_or(12),
+        serif_family: input.opt_value_from_str("--serif-family")?,
+        sans_serif_family: input.opt_value_from_str("--sans-serif-family")?,
+        cursive_family: input.opt_value_from_str("--cursive-family")?,
+        fantasy_family: input.opt_value_from_str("--fantasy-family")?,
+        monospace_family: input.opt_value_from_str("--monospace-family")?,
+        font_files: input.values_from_str("--use-font-file")?,
+        font_dirs: input.values_from_str("--use-fonts-dir")?,
+        skip_system_fonts: input.contains("--skip-system-fonts"),
+        list_fonts: input.contains("--list-fonts"),
 
-        query_all:          input.contains("--query-all"),
-        export_id:          input.opt_value_from_str("--export-id")?,
+        query_all: input.contains("--query-all"),
+        export_id: input.opt_value_from_str("--export-id")?,
 
-        perf:               input.contains("--perf"),
-        quiet:              input.contains("--quiet"),
-        dump_svg:           input.opt_value_from_str("--dump-svg")?,
+        perf: input.contains("--perf"),
+        quiet: input.contains("--quiet"),
+        dump_svg: input.opt_value_from_str("--dump-svg")?,
 
-        free:               input.free()?,
+        free: input.free()?,
     })
 }
 
@@ -411,7 +433,10 @@ fn parse_args() -> Result<Args, String> {
     let usvg = usvg::Options {
         path: Some(in_svg.clone()),
         dpi: args.dpi as f64,
-        font_family: args.font_family.take().unwrap_or_else(|| "Times New Roman".to_string()),
+        font_family: args
+            .font_family
+            .take()
+            .unwrap_or_else(|| "Times New Roman".to_string()),
         font_size: args.font_size as f64,
         languages: args.languages,
         shape_rendering: args.shape_rendering,
@@ -451,8 +476,8 @@ fn load_fonts(args: &mut CliArgs) -> usvg::fontdb::Database {
         fontdb.load_fonts_dir(path);
     }
 
-    let take_or = |family: Option<String>, fallback: &str|
-        family.unwrap_or_else(|| fallback.to_string());
+    let take_or =
+        |family: Option<String>, fallback: &str| family.unwrap_or_else(|| fallback.to_string());
 
     fontdb.set_serif_family(take_or(args.serif_family.take(), "Times New Roman"));
     fontdb.set_sans_serif_family(take_or(args.sans_serif_family.take(), "Arial"));
@@ -465,8 +490,12 @@ fn load_fonts(args: &mut CliArgs) -> usvg::fontdb::Database {
             if let usvg::fontdb::Source::File(ref path) = &*face.source {
                 println!(
                     "{}: '{}', {}, {:?}, {:?}, {:?}",
-                    path.display(), face.family, face.index,
-                    face.style, face.weight.0, face.stretch
+                    path.display(),
+                    face.family,
+                    face.index,
+                    face.style,
+                    face.weight.0,
+                    face.stretch
                 );
             }
         }
@@ -474,7 +503,6 @@ fn load_fonts(args: &mut CliArgs) -> usvg::fontdb::Database {
 
     fontdb
 }
-
 
 /// A simple stderr logger.
 static LOGGER: SimpleLogger = SimpleLogger;
@@ -496,8 +524,10 @@ impl log::Log for SimpleLogger {
 
             match record.level() {
                 log::Level::Error => eprintln!("Error (in {}:{}): {}", target, line, record.args()),
-                log::Level::Warn  => eprintln!("Warning (in {}:{}): {}", target, line, record.args()),
-                log::Level::Info  => eprintln!("Info (in {}:{}): {}", target, line, record.args()),
+                log::Level::Warn => {
+                    eprintln!("Warning (in {}:{}): {}", target, line, record.args())
+                }
+                log::Level::Info => eprintln!("Info (in {}:{}): {}", target, line, record.args()),
                 log::Level::Debug => eprintln!("Debug (in {}:{}): {}", target, line, record.args()),
                 log::Level::Trace => eprintln!("Trace (in {}:{}): {}", target, line, record.args()),
             }

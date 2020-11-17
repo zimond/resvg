@@ -4,7 +4,7 @@
 
 //! Some useful utilities.
 
-use crate::{tree, geom::*};
+use crate::{geom::*, tree};
 
 // TODO: https://github.com/rust-lang/rust/issues/44095
 /// Bounds `f64` number.
@@ -38,9 +38,17 @@ pub fn view_box_to_transform(
         (sx, sy)
     } else {
         let s = if aspect.slice {
-            if sx < sy { sy } else { sx }
+            if sx < sy {
+                sy
+            } else {
+                sx
+            }
         } else {
-            if sx > sy { sy } else { sx }
+            if sx > sy {
+                sy
+            } else {
+                sx
+            }
         };
 
         (s, s)
@@ -70,14 +78,20 @@ pub fn view_box_to_transform_with_clip(
     let (tx, ty, clip) = if view_box.aspect.slice {
         let (dx, dy) = aligned_pos(
             view_box.aspect.align,
-            0.0, 0.0, new_size.width() as f64 - r.width(), new_size.height() as f64 - r.height(),
+            0.0,
+            0.0,
+            new_size.width() as f64 - r.width(),
+            new_size.height() as f64 - r.height(),
         );
 
         (r.x() - dx, r.y() - dy, Some(r))
     } else {
         let (dx, dy) = aligned_pos(
             view_box.aspect.align,
-            r.x(), r.y(), r.width() - new_size.width() as f64, r.height() - new_size.height() as f64,
+            r.x(),
+            r.y(),
+            r.width() - new_size.width() as f64,
+            r.height() - new_size.height() as f64,
         );
 
         (dx, dy, None)
@@ -91,21 +105,18 @@ pub fn view_box_to_transform_with_clip(
 }
 
 /// Returns object aligned position.
-pub fn aligned_pos(
-    align: tree::Align,
-    x: f64, y: f64, w: f64, h: f64,
-) -> (f64, f64) {
+pub fn aligned_pos(align: tree::Align, x: f64, y: f64, w: f64, h: f64) -> (f64, f64) {
     match align {
-        tree::Align::None     => (x,           y          ),
-        tree::Align::XMinYMin => (x,           y          ),
-        tree::Align::XMidYMin => (x + w / 2.0, y          ),
-        tree::Align::XMaxYMin => (x + w,       y          ),
-        tree::Align::XMinYMid => (x,           y + h / 2.0),
+        tree::Align::None => (x, y),
+        tree::Align::XMinYMin => (x, y),
+        tree::Align::XMidYMin => (x + w / 2.0, y),
+        tree::Align::XMaxYMin => (x + w, y),
+        tree::Align::XMinYMid => (x, y + h / 2.0),
         tree::Align::XMidYMid => (x + w / 2.0, y + h / 2.0),
-        tree::Align::XMaxYMid => (x + w,       y + h / 2.0),
-        tree::Align::XMinYMax => (x,           y + h      ),
-        tree::Align::XMidYMax => (x + w / 2.0, y + h      ),
-        tree::Align::XMaxYMax => (x + w,       y + h      ),
+        tree::Align::XMaxYMid => (x + w, y + h / 2.0),
+        tree::Align::XMinYMax => (x, y + h),
+        tree::Align::XMidYMax => (x + w / 2.0, y + h),
+        tree::Align::XMaxYMax => (x + w, y + h),
     }
 }
 

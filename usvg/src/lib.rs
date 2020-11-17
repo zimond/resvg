@@ -58,7 +58,6 @@ Full spec can be found [here](https://github.com/RazrFalcon/resvg/blob/master/do
 */
 
 #![doc(html_root_url = "https://docs.rs/usvg/0.11.0")]
-
 #![warn(missing_docs)]
 #![warn(missing_debug_implementations)]
 #![warn(missing_copy_implementations)]
@@ -170,30 +169,31 @@ macro_rules! matches {
     }
 }
 
-pub mod utils;
 mod convert;
 mod error;
+#[cfg(feature = "text")]
+mod fontdb_ext;
 mod geom;
 mod options;
 mod svgtree;
 mod tree;
-#[cfg(feature = "text")] mod fontdb_ext;
+pub mod utils;
 
 /// Shorthand names for modules.
 mod short {
     pub use svgtypes::LengthUnit as Unit;
 }
 
-#[cfg(feature = "text")] pub use fontdb;
+#[cfg(feature = "text")]
+pub use fontdb;
 
-pub use xmlwriter::Options as XmlOptions;
 pub use xmlwriter::Indent as XmlIndent;
+pub use xmlwriter::Options as XmlOptions;
 
 pub use crate::error::*;
 pub use crate::geom::*;
 pub use crate::options::*;
 pub use crate::tree::*;
-
 
 /// Checks that type has a default value.
 pub trait IsDefault: Default {
@@ -208,7 +208,6 @@ impl<T: Default + PartialEq + Copy> IsDefault for T {
     }
 }
 
-
 /// Checks that the current number is > 0.
 pub trait IsValidLength {
     /// Checks that the current number is > 0.
@@ -222,7 +221,6 @@ impl IsValidLength for f64 {
     }
 }
 
-
 /// Converts `Rect` into bbox `Transform`.
 pub trait TransformFromBBox: Sized {
     /// Converts `Rect` into bbox `Transform`.
@@ -235,7 +233,6 @@ impl TransformFromBBox for tree::Transform {
         Self::new(bbox.width(), 0.0, 0.0, bbox.height(), bbox.x(), bbox.y())
     }
 }
-
 
 /// An extension trait for `fontdb::Database`.
 #[cfg(feature = "text")]

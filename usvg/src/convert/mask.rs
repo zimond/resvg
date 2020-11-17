@@ -2,16 +2,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::tree;
-use crate::svgtree;
 use super::prelude::*;
+use crate::svgtree;
+use crate::tree;
 
-
-pub fn convert(
-    node: svgtree::Node,
-    state: &State,
-    tree: &mut tree::Tree,
-) -> Option<String> {
+pub fn convert(node: svgtree::Node, state: &State, tree: &mut tree::Tree) -> Option<String> {
     // A `mask` attribute must reference a `mask` element.
     if !node.has_tag_name(EId::Mask) {
         return None;
@@ -24,8 +19,12 @@ pub fn convert(
         }
     }
 
-    let units = node.attribute(AId::MaskUnits).unwrap_or(tree::Units::ObjectBoundingBox);
-    let content_units = node.attribute(AId::MaskContentUnits).unwrap_or(tree::Units::UserSpaceOnUse);
+    let units = node
+        .attribute(AId::MaskUnits)
+        .unwrap_or(tree::Units::ObjectBoundingBox);
+    let content_units = node
+        .attribute(AId::MaskContentUnits)
+        .unwrap_or(tree::Units::UserSpaceOnUse);
 
     let rect = Rect::new(
         node.convert_length(AId::X, units, state, Length::new(-10.0, Unit::Percent)),
@@ -34,8 +33,10 @@ pub fn convert(
         node.convert_length(AId::Height, units, state, Length::new(120.0, Unit::Percent)),
     );
     let rect = try_opt_warn_or!(
-        rect, None,
-        "Mask '{}' has an invalid size. Skipped.", node.element_id(),
+        rect,
+        None,
+        "Mask '{}' has an invalid size. Skipped.",
+        node.element_id(),
     );
 
     // Resolve linked mask.
@@ -67,4 +68,3 @@ pub fn convert(
         None
     }
 }
-

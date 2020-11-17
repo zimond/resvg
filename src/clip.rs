@@ -96,7 +96,12 @@ fn draw_group_child(node: &usvg::Node, canvas: &mut tiny_skia::Canvas) {
 
         match *child.borrow() {
             usvg::NodeKind::Path(ref path_node) => {
-                crate::path::draw(&child.tree(), path_node, tiny_skia::BlendMode::SourceOver, canvas);
+                crate::path::draw(
+                    &child.tree(),
+                    path_node,
+                    tiny_skia::BlendMode::SourceOver,
+                    canvas,
+                );
             }
             _ => {}
         }

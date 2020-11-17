@@ -10,7 +10,6 @@ use std::process;
 use pico_args::Arguments;
 use usvg::SystemFontDB;
 
-
 const HELP: &str = "\
 usvg (micro SVG) is an SVG simplification tool.
 
@@ -123,38 +122,49 @@ struct Args {
 fn collect_args() -> Result<Args, pico_args::Error> {
     let mut input = Arguments::from_env();
     Ok(Args {
-        help:               input.contains(["-h", "--help"]),
-        version:            input.contains(["-V", "--version"]),
-        stdout:             input.contains("-c"),
+        help: input.contains(["-h", "--help"]),
+        version: input.contains(["-V", "--version"]),
+        stdout: input.contains("-c"),
 
-        dpi:                input.opt_value_from_fn("--dpi", parse_dpi)?.unwrap_or(96),
-        languages:          input.opt_value_from_fn("--languages", parse_languages)?
-                                 .unwrap_or(vec!["en".to_string()]), // TODO: use system language
-        shape_rendering:    input.opt_value_from_str("--shape-rendering")?.unwrap_or_default(),
-        text_rendering:     input.opt_value_from_str("--text-rendering")?.unwrap_or_default(),
-        image_rendering:    input.opt_value_from_str("--image-rendering")?.unwrap_or_default(),
+        dpi: input.opt_value_from_fn("--dpi", parse_dpi)?.unwrap_or(96),
+        languages: input
+            .opt_value_from_fn("--languages", parse_languages)?
+            .unwrap_or(vec!["en".to_string()]), // TODO: use system language
+        shape_rendering: input
+            .opt_value_from_str("--shape-rendering")?
+            .unwrap_or_default(),
+        text_rendering: input
+            .opt_value_from_str("--text-rendering")?
+            .unwrap_or_default(),
+        image_rendering: input
+            .opt_value_from_str("--image-rendering")?
+            .unwrap_or_default(),
 
-        font_family:        input.opt_value_from_str("--font-family")?,
-        font_size:          input.opt_value_from_fn("--font-size", parse_font_size)?.unwrap_or(12),
-        serif_family:       input.opt_value_from_str("--serif-family")?,
-        sans_serif_family:  input.opt_value_from_str("--sans-serif-family")?,
-        cursive_family:     input.opt_value_from_str("--cursive-family")?,
-        fantasy_family:     input.opt_value_from_str("--fantasy-family")?,
-        monospace_family:   input.opt_value_from_str("--monospace-family")?,
-        font_files:         input.values_from_str("--use-font-file")?,
-        font_dirs:          input.values_from_str("--use-fonts-dir")?,
-        skip_system_fonts:  input.contains("--skip-system-fonts"),
-        list_fonts:         input.contains("--list-fonts"),
+        font_family: input.opt_value_from_str("--font-family")?,
+        font_size: input
+            .opt_value_from_fn("--font-size", parse_font_size)?
+            .unwrap_or(12),
+        serif_family: input.opt_value_from_str("--serif-family")?,
+        sans_serif_family: input.opt_value_from_str("--sans-serif-family")?,
+        cursive_family: input.opt_value_from_str("--cursive-family")?,
+        fantasy_family: input.opt_value_from_str("--fantasy-family")?,
+        monospace_family: input.opt_value_from_str("--monospace-family")?,
+        font_files: input.values_from_str("--use-font-file")?,
+        font_dirs: input.values_from_str("--use-fonts-dir")?,
+        skip_system_fonts: input.contains("--skip-system-fonts"),
+        list_fonts: input.contains("--list-fonts"),
 
-        keep_named_groups:  input.contains("--keep-named-groups"),
-        indent:             input.opt_value_from_fn("--indent", parse_indent)?
-                                 .unwrap_or(usvg::XmlIndent::Spaces(4)),
-        attrs_indent:       input.opt_value_from_fn("--attrs-indent", parse_indent)?
-                                 .unwrap_or(usvg::XmlIndent::None),
+        keep_named_groups: input.contains("--keep-named-groups"),
+        indent: input
+            .opt_value_from_fn("--indent", parse_indent)?
+            .unwrap_or(usvg::XmlIndent::Spaces(4)),
+        attrs_indent: input
+            .opt_value_from_fn("--attrs-indent", parse_indent)?
+            .unwrap_or(usvg::XmlIndent::None),
 
-        quiet:              input.contains("--quiet"),
+        quiet: input.contains("--quiet"),
 
-        free:               input.free()?,
+        free: input.free()?,
     })
 }
 
@@ -217,7 +227,6 @@ enum OutputTo<'a> {
     Stdout,
     File(&'a str),
 }
-
 
 fn main() {
     let args = match collect_args() {
@@ -294,8 +303,9 @@ fn process(args: Args) -> Result<(), String> {
         fontdb.load_fonts_dir(path);
     }
 
-    let take_or = |mut family: Option<String>, fallback: &str|
-        family.take().unwrap_or_else(|| fallback.to_string());
+    let take_or = |mut family: Option<String>, fallback: &str| {
+        family.take().unwrap_or_else(|| fallback.to_string())
+    };
 
     fontdb.set_serif_family(take_or(args.serif_family, "Times New Roman"));
     fontdb.set_sans_serif_family(take_or(args.sans_serif_family, "Arial"));
@@ -308,8 +318,12 @@ fn process(args: Args) -> Result<(), String> {
             if let usvg::fontdb::Source::File(ref path) = &*face.source {
                 println!(
                     "{}: '{}', {}, {:?}, {:?}, {:?}",
-                    path.display(), face.family, face.index,
-                    face.style, face.weight.0, face.stretch
+                    path.display(),
+                    face.family,
+                    face.index,
+                    face.style,
+                    face.weight.0,
+                    face.stretch
                 );
             }
         }
@@ -354,8 +368,8 @@ fn process(args: Args) -> Result<(), String> {
                 .map_err(|_| format!("failed to write to the stdout"))?;
         }
         OutputTo::File(path) => {
-            let mut f = File::create(path)
-                .map_err(|_| format!("failed to create the output file"))?;
+            let mut f =
+                File::create(path).map_err(|_| format!("failed to create the output file"))?;
             f.write_all(s.as_bytes())
                 .map_err(|_| format!("failed to write to the output file"))?;
         }
@@ -375,7 +389,6 @@ fn load_stdin() -> Result<String, String> {
 
     Ok(s)
 }
-
 
 /// A simple stderr logger.
 static LOGGER: SimpleLogger = SimpleLogger;
@@ -397,8 +410,10 @@ impl log::Log for SimpleLogger {
 
             match record.level() {
                 log::Level::Error => eprintln!("Error (in {}:{}): {}", target, line, record.args()),
-                log::Level::Warn  => eprintln!("Warning (in {}:{}): {}", target, line, record.args()),
-                log::Level::Info  => eprintln!("Info (in {}:{}): {}", target, line, record.args()),
+                log::Level::Warn => {
+                    eprintln!("Warning (in {}:{}): {}", target, line, record.args())
+                }
+                log::Level::Info => eprintln!("Info (in {}:{}): {}", target, line, record.args()),
                 log::Level::Debug => eprintln!("Debug (in {}:{}): {}", target, line, record.args()),
                 log::Level::Trace => eprintln!("Trace (in {}:{}): {}", target, line, record.args()),
             }

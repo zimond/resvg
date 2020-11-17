@@ -15,18 +15,23 @@ mod paint_server;
 mod shapes;
 mod style;
 mod switch;
+#[cfg(feature = "text")]
+mod text;
 mod units;
 mod use_node;
-#[cfg(feature = "text")] mod text;
 
 mod prelude {
+    pub use super::{State, SvgNodeExt};
+    pub use crate::{
+        geom::*,
+        short::*,
+        svgtree::{AId, EId},
+        IsValidLength, Options,
+    };
     pub use log::warn;
     pub use svgtypes::{FuzzyEq, FuzzyZero, Length};
-    pub use crate::{geom::*, short::*, svgtree::{AId, EId}, Options, IsValidLength};
-    pub use super::{SvgNodeExt, State};
 }
 use self::prelude::*;
-
 
 #[derive(Clone)]
 pub struct State<'a> {
@@ -38,17 +43,13 @@ pub struct State<'a> {
     opt: &'a Options,
 }
 
-
 /// Converts an input `Document` into a `Tree`.
 ///
 /// # Errors
 ///
 /// - If `Document` doesn't have an SVG node - returns an empty tree.
 /// - If `Document` doesn't have a valid size - returns `Error::InvalidSize`.
-pub fn convert_doc(
-    svg_doc: &svgtree::Document,
-    opt: &Options,
-) -> Result<tree::Tree, Error> {
+pub fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<tree::Tree, Error> {
     let svg = svg_doc.root_element();
     let size = resolve_svg_size(&svg, opt)?;
     let view_box = tree::ViewBox {
@@ -82,10 +83,7 @@ pub fn convert_doc(
     Ok(tree)
 }
 
-fn resolve_svg_size(
-    svg: &svgtree::Node,
-    opt: &Options,
-) -> Result<Size, Error> {
+fn resolve_svg_size(svg: &svgtree::Node, opt: &Options) -> Result<Size, Error> {
     let mut state = State {
         parent_clip_path: None,
         parent_marker: None,
@@ -179,7 +177,7 @@ fn convert_element(
     };
 
     match tag_name {
-          EId::Rect
+        EId::Rect
         | EId::Circle
         | EId::Ellipse
         | EId::Line
@@ -246,22 +244,16 @@ fn convert_clip_path_elements(
         };
 
         match tag_name {
-              EId::Rect
-            | EId::Circle
-            | EId::Ellipse
-            | EId::Polyline
-            | EId::Polygon
-            | EId::Path => {
+            EId::Rect | EId::Circle | EId::Ellipse | EId::Polyline | EId::Polygon | EId::Path => {
                 if let Some(path) = shapes::convert(node, state) {
                     convert_path(node, path, state, parent, tree);
                 }
             }
-            EId::Text => {
+            EId::Text =>
+            {
                 #[cfg(feature = "text")]
-                {
-                    if !state.opt.fontdb.is_empty() {
-                        text::convert(node, state, parent, tree);
-                    }
+                if !state.opt.fontdb.is_empty() {
+                    text::convert(node, state, parent, tree);
                 }
             }
             _ => {
@@ -323,7 +315,6 @@ fn convert_group(
         None
     };
 
-
     let mut filter = None;
     if state.parent_clip_path.is_none() {
         if let Some(link) = node.attribute::<svgtree::Node>(AId::Filter) {
@@ -354,15 +345,15 @@ fn convert_group(
 
     // TODO: move to `::deref` later.
     let filter_fill = resolve_filter_fill(node, state, filter.as_ref().map(|t| t.as_str()), tree);
-    let filter_stroke = resolve_filter_stroke(node, state, filter.as_ref().map(|t| t.as_str()), tree);
+    let filter_stroke =
+        resolve_filter_stroke(node, state, filter.as_ref().map(|t| t.as_str()), tree);
 
     let transform: tree::Transform = node.attribute(AId::Transform).unwrap_or_default();
 
     let enable_background = node.attribute(AId::EnableBackground);
 
     let is_g_or_use = node.has_tag_name(EId::G) || node.has_tag_name(EId::Use);
-    let required =
-           opacity.value().fuzzy_ne(&1.0)
+    let required = opacity.value().fuzzy_ne(&1.0)
         || clip_path.is_some()
         || mask.is_some()
         || filter.is_some()
@@ -406,7 +397,11 @@ fn resolve_filter_fill(
 ) -> Option<tree::Paint> {
     let filter_node = tree.defs_by_id(filter_id?)?;
     if let tree::NodeKind::Filter(ref filter) = *filter_node.borrow() {
-        if !filter.children.iter().any(|c| c.kind.has_input(&tree::FilterInput::FillPaint)) {
+        if !filter
+            .children
+            .iter()
+            .any(|c| c.kind.has_input(&tree::FilterInput::FillPaint))
+        {
             return None;
         }
     }
@@ -423,7 +418,11 @@ fn resolve_filter_stroke(
 ) -> Option<tree::Paint> {
     let filter_node = tree.defs_by_id(filter_id?)?;
     if let tree::NodeKind::Filter(ref filter) = *filter_node.borrow() {
-        if !filter.children.iter().any(|c| c.kind.has_input(&tree::FilterInput::StrokePaint)) {
+        if !filter
+            .children
+            .iter()
+            .any(|c| c.kind.has_input(&tree::FilterInput::StrokePaint))
+        {
             return None;
         }
     }
@@ -470,10 +469,7 @@ fn remove_empty_groups(tree: &mut tree::Tree) {
     while rm(tree.root()) {}
 }
 
-fn ungroup_groups(
-    opt: &Options,
-    tree: &mut tree::Tree,
-) {
+fn ungroup_groups(opt: &Options, tree: &mut tree::Tree) {
     fn ungroup(parent: tree::Node, opt: &Options) -> bool {
         let mut changed = false;
 
@@ -485,13 +481,13 @@ fn ungroup_groups(
             let is_ok = if let tree::NodeKind::Group(ref g) = *node.borrow() {
                 ts = g.transform;
 
-                   g.opacity.is_default()
-                && g.clip_path.is_none()
-                && g.mask.is_none()
-                && g.filter.is_none()
-                && g.enable_background.is_none()
-                && !(opt.keep_named_groups && !g.id.is_empty())
-                && !is_id_used(&parent.tree(), &g.id)
+                g.opacity.is_default()
+                    && g.clip_path.is_none()
+                    && g.mask.is_none()
+                    && g.filter.is_none()
+                    && g.enable_background.is_none()
+                    && !(opt.keep_named_groups && !g.id.is_empty())
+                    && !is_id_used(&parent.tree(), &g.id)
             } else {
                 false
             };
@@ -534,9 +530,7 @@ fn ungroup_groups(
     while ungroup(tree.root(), opt) {}
 }
 
-fn remove_unused_defs(
-    tree: &mut tree::Tree,
-) {
+fn remove_unused_defs(tree: &mut tree::Tree) {
     let mut is_changed = true;
     while is_changed {
         is_changed = false;
@@ -553,11 +547,7 @@ fn remove_unused_defs(
     }
 }
 
-fn link_fe_image(
-    svg_doc: &svgtree::Document,
-    state: &State,
-    tree: &mut tree::Tree,
-) {
+fn link_fe_image(svg_doc: &svgtree::Document, state: &State, tree: &mut tree::Tree) {
     let mut ids = Vec::new();
     // TODO: simplify
     for filter_node in tree.defs().children() {
@@ -725,12 +715,18 @@ fn convert_path(
     }
 }
 
-
 pub trait SvgNodeExt {
     fn resolve_length(&self, aid: AId, state: &State, def: f64) -> f64;
     fn resolve_valid_length(&self, aid: AId, state: &State, def: f64) -> Option<f64>;
-    fn convert_length(&self, aid: AId, object_units: tree::Units, state: &State, def: Length) -> f64;
-    fn try_convert_length(&self, aid: AId, object_units: tree::Units, state: &State) -> Option<f64>;
+    fn convert_length(
+        &self,
+        aid: AId,
+        object_units: tree::Units,
+        state: &State,
+        def: Length,
+    ) -> f64;
+    fn try_convert_length(&self, aid: AId, object_units: tree::Units, state: &State)
+        -> Option<f64>;
     fn convert_user_length(&self, aid: AId, state: &State, def: Length) -> f64;
     fn try_convert_user_length(&self, aid: AId, state: &State) -> Option<f64>;
     fn is_visible_element(&self, opt: &Options) -> bool;
@@ -738,8 +734,11 @@ pub trait SvgNodeExt {
 
 impl<'a> SvgNodeExt for svgtree::Node<'a> {
     fn resolve_length(&self, aid: AId, state: &State, def: f64) -> f64 {
-        debug_assert!(!matches!(aid, AId::BaselineShift | AId::FontSize),
-                      "{} cannot be resolved via this function", aid);
+        debug_assert!(
+            !matches!(aid, AId::BaselineShift | AId::FontSize),
+            "{} cannot be resolved via this function",
+            aid
+        );
 
         if let Some(n) = self.find_node_with_attribute(aid) {
             if let Some(length) = n.attribute(aid) {
@@ -752,15 +751,42 @@ impl<'a> SvgNodeExt for svgtree::Node<'a> {
 
     fn resolve_valid_length(&self, aid: AId, state: &State, def: f64) -> Option<f64> {
         let n = self.resolve_length(aid, state, def);
-        if n.is_valid_length() { Some(n) } else { None }
+        if n.is_valid_length() {
+            Some(n)
+        } else {
+            None
+        }
     }
 
-    fn convert_length(&self, aid: AId, object_units: tree::Units, state: &State, def: Length) -> f64 {
-        units::convert_length(self.attribute(aid).unwrap_or(def), *self, aid, object_units, state)
+    fn convert_length(
+        &self,
+        aid: AId,
+        object_units: tree::Units,
+        state: &State,
+        def: Length,
+    ) -> f64 {
+        units::convert_length(
+            self.attribute(aid).unwrap_or(def),
+            *self,
+            aid,
+            object_units,
+            state,
+        )
     }
 
-    fn try_convert_length(&self, aid: AId, object_units: tree::Units, state: &State) -> Option<f64> {
-        Some(units::convert_length(self.attribute(aid)?, *self, aid, object_units, state))
+    fn try_convert_length(
+        &self,
+        aid: AId,
+        object_units: tree::Units,
+        state: &State,
+    ) -> Option<f64> {
+        Some(units::convert_length(
+            self.attribute(aid)?,
+            *self,
+            aid,
+            object_units,
+            state,
+        ))
     }
 
     fn convert_user_length(&self, aid: AId, state: &State, def: Length) -> f64 {
@@ -772,8 +798,8 @@ impl<'a> SvgNodeExt for svgtree::Node<'a> {
     }
 
     fn is_visible_element(&self, opt: &Options) -> bool {
-           self.attribute(AId::Display) != Some("none")
-        && self.has_valid_transform(AId::Transform)
-        && switch::is_condition_passed(*self, opt)
+        self.attribute(AId::Display) != Some("none")
+            && self.has_valid_transform(AId::Transform)
+            && switch::is_condition_passed(*self, opt)
     }
 }

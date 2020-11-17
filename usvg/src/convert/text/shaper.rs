@@ -2,24 +2,17 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use kurbo::{ParamCurveArclen, ParamCurve, ParamCurveDeriv};
-use unicode_vo::Orientation as CharOrientation;
-use unicode_script::UnicodeScript;
+use kurbo::{ParamCurve, ParamCurveArclen, ParamCurveDeriv};
 use ttf_parser::GlyphId;
+use unicode_script::UnicodeScript;
+use unicode_vo::Orientation as CharOrientation;
 
-use crate::{tree, fontdb_ext, convert::prelude::*};
-use crate::tree::CubicBezExt;
-use crate::fontdb_ext::DatabaseExt;
 use super::convert::{
-    ByteIndex,
-    CharacterPosition,
-    TextAnchor,
-    TextChunk,
-    TextFlow,
-    TextPath,
-    WritingMode,
+    ByteIndex, CharacterPosition, TextAnchor, TextChunk, TextFlow, TextPath, WritingMode,
 };
-
+use crate::fontdb_ext::DatabaseExt;
+use crate::tree::CubicBezExt;
+use crate::{convert::prelude::*, fontdb_ext, tree};
 
 /// A glyph.
 ///
@@ -54,7 +47,6 @@ impl Glyph {
         self.id.0 == 0
     }
 }
-
 
 /// An outlined cluster.
 ///
@@ -115,7 +107,6 @@ impl OutlinedCluster {
     }
 }
 
-
 /// An iterator over glyph clusters.
 ///
 /// Input:  0 2 2 2 3 4 4 5 5
@@ -153,15 +144,11 @@ impl<'a> Iterator for GlyphClusters<'a> {
     }
 }
 
-
 /// Converts a text chunk into a list of outlined clusters.
 ///
 /// This function will do the BIDI reordering, text shaping and glyphs outlining,
 /// but not the text layouting. So all clusters are in the 0x0 position.
-pub fn outline_chunk(
-    chunk: &TextChunk,
-    state: &State,
-) -> Vec<OutlinedCluster> {
+pub fn outline_chunk(chunk: &TextChunk, state: &State) -> Vec<OutlinedCluster> {
     let mut glyphs = Vec::new();
     for span in &chunk.spans {
         let tmp_glyphs = shape_text(&chunk.text, span.font, state);
@@ -192,7 +179,12 @@ pub fn outline_chunk(
     for (range, byte_idx) in GlyphClusters::new(&glyphs) {
         if let Some(span) = chunk.span_at(byte_idx) {
             let db = &state.opt.fontdb;
-            clusters.push(outline_cluster(&glyphs[range], &chunk.text, span.font_size, db));
+            clusters.push(outline_cluster(
+                &glyphs[range],
+                &chunk.text,
+                span.font_size,
+                db,
+            ));
         }
     }
 
@@ -200,11 +192,7 @@ pub fn outline_chunk(
 }
 
 /// Text shaping with font fallback.
-fn shape_text(
-    text: &str,
-    font: fontdb_ext::Font,
-    state: &State,
-) -> Vec<Glyph> {
+fn shape_text(text: &str, font: fontdb_ext::Font, state: &State) -> Vec<Glyph> {
     let mut glyphs = shape_text_with_font(text, font, state).unwrap_or_default();
 
     // Remember all fonts used for shaping.
@@ -227,8 +215,8 @@ fn shape_text(
             };
 
             // Shape again, using a new font.
-            let fallback_glyphs = shape_text_with_font(text, fallback_font, state)
-                .unwrap_or_default();
+            let fallback_glyphs =
+                shape_text_with_font(text, fallback_font, state).unwrap_or_default();
 
             let all_matched = fallback_glyphs.iter().all(|g| !g.is_missing());
             if all_matched {
@@ -264,7 +252,10 @@ fn shape_text(
         if glyph.is_missing() {
             let c = glyph.byte_idx.char_from(text);
             // TODO: print a full grapheme
-            warn!("No fonts with a {}/U+{:X} character were found.", c, c as u32);
+            warn!(
+                "No fonts with a {}/U+{:X} character were found.",
+                c, c as u32
+            );
         }
     }
 
@@ -274,59 +265,58 @@ fn shape_text(
 /// Converts a text into a list of glyph IDs.
 ///
 /// This function will do the BIDI reordering and text shaping.
-fn shape_text_with_font(
-    text: &str,
-    font: fontdb_ext::Font,
-    state: &State,
-) -> Option<Vec<Glyph>> {
-    state.opt.fontdb.with_face_data(font.id, |font_data, face_index| -> Option<Vec<Glyph>> {
-        let rb_font = rustybuzz::Font::from_data(font_data, face_index).unwrap();
+fn shape_text_with_font(text: &str, font: fontdb_ext::Font, state: &State) -> Option<Vec<Glyph>> {
+    state
+        .opt
+        .fontdb
+        .with_face_data(font.id, |font_data, face_index| -> Option<Vec<Glyph>> {
+            let rb_font = rustybuzz::Font::from_data(font_data, face_index).unwrap();
 
-        let bidi_info = unicode_bidi::BidiInfo::new(text, Some(unicode_bidi::Level::ltr()));
-        let paragraph = &bidi_info.paragraphs[0];
-        let line = paragraph.range.clone();
+            let bidi_info = unicode_bidi::BidiInfo::new(text, Some(unicode_bidi::Level::ltr()));
+            let paragraph = &bidi_info.paragraphs[0];
+            let line = paragraph.range.clone();
 
-        let mut glyphs = Vec::new();
+            let mut glyphs = Vec::new();
 
-        let (levels, runs) = bidi_info.visual_runs(&paragraph, line);
-        for run in runs.iter() {
-            let sub_text = &text[run.clone()];
-            if sub_text.is_empty() {
-                continue;
+            let (levels, runs) = bidi_info.visual_runs(&paragraph, line);
+            for run in runs.iter() {
+                let sub_text = &text[run.clone()];
+                if sub_text.is_empty() {
+                    continue;
+                }
+
+                let hb_direction = if levels[run.start].is_rtl() {
+                    rustybuzz::Direction::RightToLeft
+                } else {
+                    rustybuzz::Direction::LeftToRight
+                };
+
+                let mut buffer = rustybuzz::UnicodeBuffer::new();
+                buffer.push_str(sub_text);
+                buffer.set_direction(hb_direction);
+
+                let output = rustybuzz::shape(&rb_font, &[], buffer);
+
+                let positions = output.glyph_positions();
+                let infos = output.glyph_infos();
+
+                for (pos, info) in positions.iter().zip(infos) {
+                    let idx = run.start + info.cluster as usize;
+                    debug_assert!(text.get(idx..).is_some());
+
+                    glyphs.push(Glyph {
+                        byte_idx: ByteIndex::new(idx),
+                        id: GlyphId(info.glyph as u16),
+                        dx: pos.x_offset,
+                        dy: pos.y_offset,
+                        width: pos.x_advance,
+                        font,
+                    });
+                }
             }
 
-            let hb_direction = if levels[run.start].is_rtl() {
-                rustybuzz::Direction::RightToLeft
-            } else {
-                rustybuzz::Direction::LeftToRight
-            };
-
-            let mut buffer = rustybuzz::UnicodeBuffer::new();
-            buffer.push_str(sub_text);
-            buffer.set_direction(hb_direction);
-
-            let output = rustybuzz::shape(&rb_font, &[], buffer);
-
-            let positions = output.glyph_positions();
-            let infos = output.glyph_infos();
-
-            for (pos, info) in positions.iter().zip(infos) {
-                let idx = run.start + info.cluster as usize;
-                debug_assert!(text.get(idx..).is_some());
-
-                glyphs.push(Glyph {
-                    byte_idx: ByteIndex::new(idx),
-                    id: GlyphId(info.glyph as u16),
-                    dx: pos.x_offset,
-                    dy: pos.y_offset,
-                    width: pos.x_advance,
-                    font,
-                });
-            }
-        }
-
-        Some(glyphs)
-    })?
+            Some(glyphs)
+        })?
 }
 
 /// Outlines a glyph cluster.
@@ -412,9 +402,9 @@ fn find_font_for_char(
 
         // Check that the new face has the same style.
         let base_face = state.opt.fontdb.face(base_font_id)?;
-        if  base_face.style != face.style &&
-            base_face.weight != face.weight &&
-            base_face.stretch != face.stretch
+        if base_face.style != face.style
+            && base_face.weight != face.weight
+            && base_face.stretch != face.stretch
         {
             continue;
         }
@@ -444,16 +434,22 @@ pub fn resolve_clusters_positions(
     clusters: &mut [OutlinedCluster],
 ) -> (f64, f64) {
     match chunk.text_flow {
-        TextFlow::Horizontal => {
-            resolve_clusters_positions_horizontal(
-                chunk, char_offset, pos_list, rotate_list, clusters,
-            )
-        }
-        TextFlow::Path(ref path) => {
-            resolve_clusters_positions_path(
-                chunk, char_offset, path, pos_list, rotate_list, writing_mode, clusters,
-            )
-        }
+        TextFlow::Horizontal => resolve_clusters_positions_horizontal(
+            chunk,
+            char_offset,
+            pos_list,
+            rotate_list,
+            clusters,
+        ),
+        TextFlow::Path(ref path) => resolve_clusters_positions_path(
+            chunk,
+            char_offset,
+            path,
+            pos_list,
+            rotate_list,
+            writing_mode,
+            clusters,
+        ),
     }
 }
 
@@ -511,17 +507,20 @@ fn resolve_clusters_positions_path(
         WritingMode::TopToBottom => chunk.y.unwrap_or(0.0),
     };
 
-    let start_offset = chunk_offset + path.start_offset
-        + process_anchor(chunk.anchor, clusters_length(clusters));
+    let start_offset =
+        chunk_offset + path.start_offset + process_anchor(chunk.anchor, clusters_length(clusters));
 
     let normals = collect_normals(
-        chunk, clusters, &path.path, pos_list, char_offset, start_offset,
+        chunk,
+        clusters,
+        &path.path,
+        pos_list,
+        char_offset,
+        start_offset,
     );
     for (cluster, normal) in clusters.iter_mut().zip(normals) {
         let (x, y, angle) = match normal {
-            Some(normal) => {
-                (normal.x, normal.y, normal.angle)
-            }
+            Some(normal) => (normal.x, normal.y, normal.angle),
             None => {
                 // Hide clusters that are outside the text path.
                 cluster.visible = false;
@@ -542,7 +541,8 @@ fn resolve_clusters_positions_path(
             dy += pos.dy.unwrap_or(0.0);
         }
 
-        let baseline_shift = chunk.span_at(cluster.byte_idx)
+        let baseline_shift = chunk
+            .span_at(cluster.byte_idx)
             .map(|span| span.baseline_shift)
             .unwrap_or(0.0);
 
@@ -570,14 +570,11 @@ fn clusters_length(clusters: &[OutlinedCluster]) -> f64 {
     clusters.iter().fold(0.0, |w, cluster| w + cluster.advance)
 }
 
-fn process_anchor(
-    a: TextAnchor,
-    text_width: f64,
-) -> f64 {
+fn process_anchor(a: TextAnchor, text_width: f64) -> f64 {
     match a {
-        TextAnchor::Start   => 0.0, // Nothing.
-        TextAnchor::Middle  => -text_width / 2.0,
-        TextAnchor::End     => -text_width,
+        TextAnchor::Start => 0.0, // Nothing.
+        TextAnchor::Middle => -text_width / 2.0,
+        TextAnchor::End => -text_width,
     }
 }
 
@@ -648,12 +645,15 @@ fn collect_normals(
                 prev_y = y;
                 continue;
             }
-            tree::PathSegment::LineTo { x, y } => {
-                create_curve_from_line(prev_x, prev_y, x, y)
-            }
-            tree::PathSegment::CurveTo { x1, y1, x2, y2, x, y } => {
-                kurbo::CubicBez::from_points(prev_x, prev_y, x1, y1, x2, y2, x, y)
-            }
+            tree::PathSegment::LineTo { x, y } => create_curve_from_line(prev_x, prev_y, x, y),
+            tree::PathSegment::CurveTo {
+                x1,
+                y1,
+                x2,
+                y2,
+                x,
+                y,
+            } => kurbo::CubicBez::from_points(prev_x, prev_y, x1, y1, x2, y2, x, y),
             tree::PathSegment::ClosePath => {
                 create_curve_from_line(prev_x, prev_y, prev_mx, prev_my)
             }
@@ -702,17 +702,22 @@ fn collect_normals(
 /// Applies the `letter-spacing` property to a text chunk clusters.
 ///
 /// [In the CSS spec](https://www.w3.org/TR/css-text-3/#letter-spacing-property).
-pub fn apply_letter_spacing(
-    chunk: &TextChunk,
-    clusters: &mut [OutlinedCluster],
-) {
+pub fn apply_letter_spacing(chunk: &TextChunk, clusters: &mut [OutlinedCluster]) {
     // At least one span should have a non-zero spacing.
-    if !chunk.spans.iter().any(|span| !span.letter_spacing.is_fuzzy_zero()) {
+    if !chunk
+        .spans
+        .iter()
+        .any(|span| !span.letter_spacing.is_fuzzy_zero())
+    {
         return;
     }
 
     // Find the last byte index of the chunk.
-    let last_idx = chunk.spans.last().and_then(|span| span.end.checked_sub(1)).unwrap_or(0);
+    let last_idx = chunk
+        .spans
+        .last()
+        .and_then(|span| span.end.checked_sub(1))
+        .unwrap_or(0);
     let last_idx = ByteIndex::new(last_idx);
 
     for cluster in clusters {
@@ -747,34 +752,37 @@ pub fn apply_letter_spacing(
 fn script_supports_letter_spacing(script: unicode_script::Script) -> bool {
     use unicode_script::Script;
 
-    !matches!(script,
-          Script::Arabic
-        | Script::Syriac
-        | Script::Nko
-        | Script::Manichaean
-        | Script::Psalter_Pahlavi
-        | Script::Mandaic
-        | Script::Mongolian
-        | Script::Phags_Pa
-        | Script::Devanagari
-        | Script::Bengali
-        | Script::Gurmukhi
-        | Script::Modi
-        | Script::Sharada
-        | Script::Syloti_Nagri
-        | Script::Tirhuta
-        | Script::Ogham)
+    !matches!(
+        script,
+        Script::Arabic
+            | Script::Syriac
+            | Script::Nko
+            | Script::Manichaean
+            | Script::Psalter_Pahlavi
+            | Script::Mandaic
+            | Script::Mongolian
+            | Script::Phags_Pa
+            | Script::Devanagari
+            | Script::Bengali
+            | Script::Gurmukhi
+            | Script::Modi
+            | Script::Sharada
+            | Script::Syloti_Nagri
+            | Script::Tirhuta
+            | Script::Ogham
+    )
 }
 
 /// Applies the `word-spacing` property to a text chunk clusters.
 ///
 /// [In the CSS spec](https://www.w3.org/TR/css-text-3/#propdef-word-spacing).
-pub fn apply_word_spacing(
-    chunk: &TextChunk,
-    clusters: &mut [OutlinedCluster],
-) {
+pub fn apply_word_spacing(chunk: &TextChunk, clusters: &mut [OutlinedCluster]) {
     // At least one span should have a non-zero spacing.
-    if !chunk.spans.iter().any(|span| !span.word_spacing.is_fuzzy_zero()) {
+    if !chunk
+        .spans
+        .iter()
+        .any(|span| !span.word_spacing.is_fuzzy_zero())
+    {
         return;
     }
 
@@ -796,15 +804,15 @@ pub fn apply_word_spacing(
 ///
 /// According to: https://www.w3.org/TR/css-text-3/#word-separator
 fn is_word_separator_characters(c: char) -> bool {
-    matches!(c as u32, 0x0020 | 0x00A0 | 0x1361 | 0x010100 | 0x010101 | 0x01039F | 0x01091F)
+    matches!(
+        c as u32,
+        0x0020 | 0x00A0 | 0x1361 | 0x010100 | 0x010101 | 0x01039F | 0x01091F
+    )
 }
 
 /// Rotates clusters according to
 /// [Unicode Vertical_Orientation Property](https://www.unicode.org/reports/tr50/tr50-19.html).
-pub fn apply_writing_mode(
-    writing_mode: WritingMode,
-    clusters: &mut [OutlinedCluster],
-) {
+pub fn apply_writing_mode(writing_mode: WritingMode, clusters: &mut [OutlinedCluster]) {
     if writing_mode != WritingMode::TopToBottom {
         return;
     }
