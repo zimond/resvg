@@ -18,7 +18,7 @@ pub fn draw_kind(
     kind: &usvg::ImageKind,
     view_box: usvg::ViewBox,
     rendering_mode: usvg::ImageRendering,
-    canvas: &mut skia::Canvas,
+    canvas: &mut tiny_skia::Canvas,
 ) {
     match kind {
         usvg::ImageKind::JPEG(ref data) => match read_jpeg(data) {
@@ -117,10 +117,8 @@ fn draw_raster(
 
     let mut filter = skia::FilterQuality::Low;
     if rendering_mode == usvg::ImageRendering::OptimizeSpeed {
-        filter = skia::FilterQuality::None;
+        filter = tiny_skia::FilterQuality::Nearest;
     }
-
-    canvas.save();
 
     if view_box.aspect.slice {
         let r = view_box.rect;
@@ -140,39 +138,45 @@ fn draw_raster(
         r.width() as f32,
         r.height() as f32,
         filter,
+        1.0,
+        ts,
     );
+    let mut paint = tiny_skia::Paint::default();
+    paint.shader = pattern;
 
-    // Revert.
-    canvas.restore();
+    canvas.fill_rect(rect, &paint);
+
+    canvas.reset_clip();
+
+    Some(())
 }
 
-fn image_to_surface(image: &Image, surface: &mut [u8]) {
-    // Surface is always ARGB.
-    const SURFACE_CHANNELS: usize = 4;
-
+fn image_to_pixmap(image: &Image, pixmap: &mut [u8]) {
     use rgb::FromSlice;
 
     let mut i = 0;
     match &image.data {
         ImageData::RGB(data) => {
             for p in data.as_rgb() {
-                surface[i + 0] = p.r;
-                surface[i + 1] = p.g;
-                surface[i + 2] = p.b;
-                surface[i + 3] = 255;
+                pixmap[i + 0] = p.r;
+                pixmap[i + 1] = p.g;
+                pixmap[i + 2] = p.b;
+                pixmap[i + 3] = 255;
 
-                i += SURFACE_CHANNELS;
+                i += tiny_skia::BYTES_PER_PIXEL;
             }
         }
         ImageData::RGBA(data) => {
             for p in data.as_rgba() {
-                surface[i + 0] = p.r;
-                surface[i + 1] = p.g;
-                surface[i + 2] = p.b;
-                surface[i + 3] = p.a;
+                pixmap[i + 0] = p.r;
+                pixmap[i + 1] = p.g;
+                pixmap[i + 2] = p.b;
+                pixmap[i + 3] = p.a;
 
-                i += SURFACE_CHANNELS;
+                i += tiny_skia::BYTES_PER_PIXEL;
             }
+
+            svgfilters::multiply_alpha(pixmap.as_rgba_mut());
         }
     }
 }
@@ -181,7 +185,10 @@ fn draw_svg(tree: &usvg::Tree, view_box: usvg::ViewBox, canvas: &mut skia::Canva
     let img_size = tree.svg_node().size.to_screen_size();
     let (ts, clip) = usvg::utils::view_box_to_transform_with_clip(&view_box, img_size);
 
-    canvas.save();
+    let mut sub_canvas = canvas.clone();
+    sub_canvas.apply_transform(&ts.to_native());
+    sub_canvas.pixmap.fill(tiny_skia::Color::TRANSPARENT);
+    render_to_canvas(&tree, img_size, &mut sub_canvas);
 
     if let Some(clip) = clip {
         canvas.set_clip_rect(
@@ -192,16 +199,18 @@ fn draw_svg(tree: &usvg::Tree, view_box: usvg::ViewBox, canvas: &mut skia::Canva
         );
     }
 
-    canvas.concat(ts.to_native());
-    render_to_canvas(&tree, img_size, canvas);
+    let ts = canvas.get_transform();
+    canvas.reset_transform();
+    canvas.draw_pixmap(0, 0, &sub_canvas.pixmap, &tiny_skia::PixmapPaint::default());
+    canvas.reset_clip();
+    canvas.set_transform(ts);
 
-    canvas.restore();
+    Some(())
 }
 
-/// A raster image data.
 struct Image {
-    pub data: ImageData,
-    pub size: ScreenSize,
+    data: ImageData,
+    size: ScreenSize,
 }
 
 /// A raster image data kind.

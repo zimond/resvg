@@ -16,11 +16,11 @@ pub use usvg::ScreenSize;
 use log::warn;
 use usvg::NodeExt;
 
+#[macro_use] mod macros;
 mod clip;
 mod filter;
 mod image;
 mod layers;
-mod macros;
 mod mask;
 mod paint_server;
 mod path;
@@ -37,16 +37,19 @@ pub struct Image {
 }
 
 impl Image {
-    fn from_surface(surface: tiny_skia::Surface) -> Self {
+    fn from_canvas(canvas: tiny_skia::Canvas) -> Self {
         use rgb::FromSlice;
 
-        let mut data = surface.data().to_vec();
+        let width = canvas.pixmap.width();
+        let height = canvas.pixmap.height();
+
+        let mut data = canvas.pixmap.take();
         svgfilters::demultiply_alpha(data.as_rgba_mut());
 
         Image {
             data,
-            width: surface.width(),
-            height: surface.height(),
+            width,
+            height,
         }
     }
 
@@ -99,10 +102,10 @@ pub fn render(
     fit_to: usvg::FitTo,
     background: Option<usvg::Color>,
 ) -> Option<Image> {
-    let (mut img, img_size) =
-        render::create_root_image(tree.svg_node().size.to_screen_size(), fit_to, background)?;
-    render::render_to_canvas(tree, img_size, &mut img);
-    Some(Image::from_surface(img))
+    let (mut canvas, size)
+        = render::create_root_image(tree.svg_node().size.to_screen_size(), fit_to, background)?;
+    render::render_to_canvas(tree, size, &mut canvas);
+    Some(Image::from_canvas(canvas))
 }
 
 /// Renders an SVG node to image.
@@ -127,5 +130,5 @@ pub fn render_node(
         render::create_root_image(node_bbox.size().to_screen_size(), fit_to, background)?;
 
     render::render_node_to_canvas(node, vbox, img_size, &mut render::RenderState::Ok, &mut img);
-    Some(Image::from_surface(img))
+    Some(Image::from_canvas(img))
 }
