@@ -503,7 +503,8 @@ dependencies = [
 [[package]]
 name = "tiny-skia"
 version = "0.2.0"
-source = "git+https://github.com/RazrFalcon/tiny-skia?rev=0adce43#0adce439209e7e23c0143d556578e76d7584faf5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a428f0f1f63fa531b4a820f68b97270a4e90469c97162f0b01e3d6872c68e5ba"
 dependencies = [
  "arrayref",
  "arrayvec",
