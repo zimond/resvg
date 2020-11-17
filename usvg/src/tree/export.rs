@@ -741,6 +741,7 @@ impl XmlWriterExt for XmlWriter {
             ImageKind::JPEG(ref data) => ("jpg", data.as_slice()),
             ImageKind::PNG(ref data) => ("png", data.as_slice()),
             ImageKind::SVG(ref bytes, _) => ("svg+xml", bytes.as_slice()),
+            ImageKind::RAW(ref data) => ("raw", data.as_slice()),
         };
 
         self.write_attribute_raw("xlink:href", |buf| {
