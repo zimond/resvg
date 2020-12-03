@@ -194,6 +194,7 @@ pub use crate::error::*;
 pub use crate::geom::*;
 pub use crate::options::*;
 pub use crate::tree::*;
+pub use crate::svgtree::EnumFromStr;
 
 /// Checks that type has a default value.
 pub trait IsDefault: Default {
