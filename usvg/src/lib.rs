@@ -57,7 +57,7 @@ Full spec can be found [here](https://github.com/RazrFalcon/resvg/blob/master/do
 [SVG]: https://en.wikipedia.org/wiki/Scalable_Vector_Graphics
 */
 
-#![doc(html_root_url = "https://docs.rs/usvg/0.11.0")]
+#![doc(html_root_url = "https://docs.rs/usvg/0.12.0")]
 #![warn(missing_docs)]
 #![warn(missing_debug_implementations)]
 #![warn(missing_copy_implementations)]
@@ -193,8 +193,8 @@ pub use xmlwriter::Options as XmlOptions;
 pub use crate::error::*;
 pub use crate::geom::*;
 pub use crate::options::*;
-pub use crate::tree::*;
 pub use crate::svgtree::EnumFromStr;
+pub use crate::tree::*;
 
 /// Checks that type has a default value.
 pub trait IsDefault: Default {
@@ -242,7 +242,7 @@ pub trait SystemFontDB {
     fn load_system_fonts(&mut self);
 }
 
-#[cfg(feature = "text")]
+#[cfg(feature = "system-fonts")]
 impl SystemFontDB for fontdb::Database {
     #[inline]
     fn load_system_fonts(&mut self) {

@@ -1,6 +1,6 @@
 [package]
 name = "resvg"
-version = "0.11.0"
+version = "0.12.0"
 authors = ["Reizner Evgeniy <razrfalcon@gmail.com>"]
 keywords = ["svg", "render", "raster", "skia"]
 license = "MPL-2.0"
@@ -25,12 +25,12 @@ pico-args = "0.3"
 png = "0.16"
 rgb = "0.8"
 svgfilters = { path = "svgfilters", version = "0.2" }
-tiny-skia = "0.2.0"
-usvg = { path = "usvg", version = "0.11", default-features = false }
+tiny-skia = "0.2"
+usvg = { path = "usvg", version = "0.12", default-features = false }
 
 [dev-dependencies]
 rayon = "1.3"
 
 [features]
 default = ["text"]
-text = ["usvg/text"] # enables SVG Text support
+text = ["usvg/system-fonts", "usvg/text"] # enables SVG Text support

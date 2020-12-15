@@ -1,5 +1,5 @@
 ## resvg
-[![Build Status](https://travis-ci.org/RazrFalcon/resvg.svg?branch=master)](https://travis-ci.org/RazrFalcon/resvg)
+![Build Status](https://github.com/RazrFalcon/resvg/workflows/Rust/badge.svg)
 [![Crates.io](https://img.shields.io/crates/v/resvg.svg)](https://crates.io/crates/resvg)
 [![Documentation](https://docs.rs/resvg/badge.svg)](https://docs.rs/resvg)
 
@@ -45,28 +45,14 @@ apples and oranges. Everyone has a very different set of supported features,
 implementation languages, build flags, etc.
 But since `resvg` is written in Rust and uses [tiny-skia] for rendering - it's pretty fast.
 
-## Building
-
-Despite being a Rust library, `resvg` still depends on some C++ code,
-therefore you will need a C++ compiler to build it. But in most cases the compilation
-process should be as easy as:
-
-```
-cargo build --release
-```
-
-which will produce binaries that doesn't require any external dependencies.
-
 ## Safety
 
-Since `resvg` depends on C++ libraries, it's inherently unsafe in Rust terms.
-Despite of that, most of the dependencies are actually fully safe.
-The main exceptions are [tiny-skia] and [rustybuzz] bindings, and files memory mapping.
+resvg and most of its dependencies are pretty safe.
+The main exceptions are [tiny-skia] and files memory mapping.
 
 ## License
 
 `resvg` project is licensed under the [MPLv2.0](https://www.mozilla.org/en-US/MPL/).
 
-[harfbuzz]: https://github.com/harfbuzz/harfbuzz
 [rustybuzz]: https://github.com/RazrFalcon/rustybuzz
 [tiny-skia]: https://github.com/RazrFalcon/tiny-skia
