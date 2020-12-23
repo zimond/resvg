@@ -3,14 +3,13 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std::ops::Deref;
-use std::rc::Rc;
+use std::sync::Arc;
 
-use crate::geom::*;
 use super::attributes::*;
 use super::pathdata::PathData;
+use crate::geom::*;
 
 // TODO: implement Default for all
-
 
 /// Node's kind.
 #[allow(missing_docs)]
@@ -71,7 +70,6 @@ impl NodeKind {
     }
 }
 
-
 /// An SVG root element.
 #[derive(Clone, Copy, Debug)]
 pub struct Svg {
@@ -89,7 +87,6 @@ pub struct Svg {
     /// `viewBox` and `preserveAspectRatio` in SVG.
     pub view_box: ViewBox,
 }
-
 
 /// A path element.
 #[derive(Clone, Debug)]
@@ -121,7 +118,7 @@ pub struct Path {
     /// Segments list.
     ///
     /// All segments are in absolute coordinates.
-    pub data: Rc<PathData>,
+    pub data: Arc<PathData>,
 }
 
 impl Default for Path {
@@ -133,11 +130,10 @@ impl Default for Path {
             fill: None,
             stroke: None,
             rendering_mode: ShapeRendering::default(),
-            data: Rc::new(PathData::default()),
+            data: Arc::new(PathData::default()),
         }
     }
 }
-
 
 /// A raster image element.
 ///
@@ -171,7 +167,6 @@ pub struct Image {
     /// Image data.
     pub kind: ImageKind,
 }
-
 
 /// A group container.
 ///
@@ -238,7 +233,6 @@ impl Default for Group {
     }
 }
 
-
 /// A generic gradient.
 #[derive(Clone, Debug)]
 pub struct BaseGradient {
@@ -260,7 +254,6 @@ pub struct BaseGradient {
     /// A list of `stop` elements.
     pub stops: Vec<Stop>,
 }
-
 
 /// A linear gradient.
 ///
@@ -290,7 +283,6 @@ impl Deref for LinearGradient {
         &self.base
     }
 }
-
 
 /// A radial gradient.
 ///
@@ -322,7 +314,6 @@ impl Deref for RadialGradient {
     }
 }
 
-
 /// Gradient's stop element.
 ///
 /// `stop` element in SVG.
@@ -343,7 +334,6 @@ pub struct Stop {
     /// `stop-opacity` in SVG.
     pub opacity: Opacity,
 }
-
 
 /// A clip-path element.
 ///
@@ -383,7 +373,6 @@ impl Default for ClipPath {
     }
 }
 
-
 /// A mask element.
 ///
 /// `mask` element in SVG.
@@ -415,7 +404,6 @@ pub struct Mask {
     /// `mask` in SVG.
     pub mask: Option<String>,
 }
-
 
 /// A pattern element.
 ///
@@ -453,7 +441,6 @@ pub struct Pattern {
     pub view_box: Option<ViewBox>,
 }
 
-
 /// A filter element.
 ///
 /// `filter` element in the SVG.
@@ -484,7 +471,6 @@ pub struct Filter {
     pub children: Vec<FilterPrimitive>,
 }
 
-
 /// A filter primitive element.
 #[derive(Clone, Debug)]
 pub struct FilterPrimitive {
@@ -513,7 +499,6 @@ pub struct FilterPrimitive {
     /// Filter primitive kind.
     pub kind: FilterKind,
 }
-
 
 /// A filter kind.
 #[allow(missing_docs)]
@@ -561,7 +546,6 @@ impl FilterKind {
     }
 }
 
-
 /// A blend filter primitive.
 ///
 /// `feBlend` element in the SVG.
@@ -582,7 +566,6 @@ pub struct FeBlend {
     /// `mode` in the SVG.
     pub mode: FeBlendMode,
 }
-
 
 /// A color matrix filter primitive.
 ///
@@ -613,14 +596,11 @@ pub enum FeColorMatrixKind {
 impl Default for FeColorMatrixKind {
     fn default() -> Self {
         FeColorMatrixKind::Matrix(vec![
-            1.0, 0.0, 0.0, 0.0, 0.0,
-            0.0, 1.0, 0.0, 0.0, 0.0,
-            0.0, 0.0, 1.0, 0.0, 0.0,
-            0.0, 0.0, 0.0, 1.0, 0.0,
+            1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 1.0, 0.0,
         ])
     }
 }
-
 
 /// A component-wise remapping filter primitive.
 ///
@@ -665,10 +645,7 @@ pub enum TransferFunction {
 
     /// Applies a linear shift to a component.
     #[allow(missing_docs)]
-    Linear {
-        slope: f64,
-        intercept: f64,
-    },
+    Linear { slope: f64, intercept: f64 },
 
     /// Applies an exponential shift to a component.
     #[allow(missing_docs)]
@@ -678,7 +655,6 @@ pub enum TransferFunction {
         offset: f64,
     },
 }
-
 
 /// A composite filter primitive.
 ///
@@ -700,7 +676,6 @@ pub struct FeComposite {
     /// `operator` in the SVG.
     pub operator: FeCompositeOperator,
 }
-
 
 /// A matrix convolution filter primitive.
 ///
@@ -736,7 +711,6 @@ pub struct FeConvolveMatrix {
     pub preserve_alpha: bool,
 }
 
-
 /// A diffuse lighting filter primitive.
 ///
 /// `feDiffuseLighting` element in the SVG.
@@ -765,7 +739,6 @@ pub struct FeDiffuseLighting {
     /// A light source.
     pub light_source: FeLightSource,
 }
-
 
 /// A displacement map filter primitive.
 ///
@@ -798,7 +771,6 @@ pub struct FeDisplacementMap {
     pub y_channel_selector: ColorChannel,
 }
 
-
 /// A flood filter primitive.
 ///
 /// `feFlood` element in the SVG.
@@ -814,7 +786,6 @@ pub struct FeFlood {
     /// `flood-opacity` in the SVG.
     pub opacity: Opacity,
 }
-
 
 /// A Gaussian blur filter primitive.
 ///
@@ -837,7 +808,6 @@ pub struct FeGaussianBlur {
     pub std_dev_y: PositiveNumber,
 }
 
-
 /// An image filter primitive.
 ///
 /// `feImage` element in the SVG.
@@ -855,7 +825,6 @@ pub struct FeImage {
     pub data: FeImageKind,
 }
 
-
 /// A merge filter primitive.
 ///
 /// `feMerge` element in the SVG.
@@ -866,7 +835,6 @@ pub struct FeMerge {
     /// List of `feMergeNode`'s in the SVG.
     pub inputs: Vec<FilterInput>,
 }
-
 
 /// A morphology filter primitive.
 ///
@@ -898,7 +866,6 @@ pub struct FeMorphology {
     pub radius_y: PositiveNumber,
 }
 
-
 /// An offset filter primitive.
 ///
 /// `feOffset` element in the SVG.
@@ -915,7 +882,6 @@ pub struct FeOffset {
     /// The amount to offset the input graphic along the Y-axis.
     pub dy: f64,
 }
-
 
 /// A specular lighting filter primitive.
 ///
@@ -953,7 +919,6 @@ pub struct FeSpecularLighting {
     pub light_source: FeLightSource,
 }
 
-
 /// A tile filter primitive.
 ///
 /// `feTile` element in the SVG.
@@ -964,7 +929,6 @@ pub struct FeTile {
     /// `in` in the SVG.
     pub input: FilterInput,
 }
-
 
 /// A turbulence generation filter primitive.
 ///
@@ -997,7 +961,6 @@ pub struct FeTurbulence {
     pub kind: FeTurbulenceKind,
 }
 
-
 /// A light source kind.
 #[allow(missing_docs)]
 #[derive(Clone, Copy, Debug)]
@@ -1018,10 +981,10 @@ impl FeLightSource {
                 let (x, y) = ts.apply(light.x, light.y);
                 light.x = x - region.x() as f64;
                 light.y = y - region.y() as f64;
-                light.z = light.z * (ts.a*ts.a + ts.d*ts.d).sqrt() / SQRT_2;
+                light.z = light.z * (ts.a * ts.a + ts.d * ts.d).sqrt() / SQRT_2;
             }
             FeLightSource::FeSpotLight(ref mut light) => {
-                let sz = (ts.a*ts.a + ts.d*ts.d).sqrt() / SQRT_2;
+                let sz = (ts.a * ts.a + ts.d * ts.d).sqrt() / SQRT_2;
 
                 let (x, y) = ts.apply(light.x, light.y);
                 light.x = x - region.x() as f64;
@@ -1039,7 +1002,6 @@ impl FeLightSource {
     }
 }
 
-
 /// A distant light source.
 ///
 /// `feDistantLight` element in the SVG.
@@ -1056,7 +1018,6 @@ pub struct FeDistantLight {
     /// `elevation` in the SVG.
     pub elevation: f64,
 }
-
 
 /// A point light source.
 ///
@@ -1078,7 +1039,6 @@ pub struct FePointLight {
     /// `z` in the SVG.
     pub z: f64,
 }
-
 
 /// A spot light source.
 ///

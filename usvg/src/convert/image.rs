@@ -65,7 +65,7 @@ pub fn get_href_data(
         match (url.mime_type().type_.as_str(), url.mime_type().subtype.as_str()) {
             ("image", "jpg") | ("image", "jpeg") => Some(tree::ImageKind::JPEG(data)),
             ("image", "png") => Some(tree::ImageKind::PNG(data)),
-            ("image", "svg+xml") => load_sub_svg(&data, opt),
+            ("image", "svg+xml") => Some(tree::ImageKind::SVG(data.to_vec(), opt.clone())),
             ("image", "raw") => Some(tree::ImageKind::RAW(data)),
             ("text", "plain") => {
                 match get_image_data_format(&data) {
@@ -76,7 +76,7 @@ pub fn get_href_data(
                         Some(tree::ImageKind::PNG(data))
                     }
                     _ => {
-                        load_sub_svg(&data, opt)
+                        Some(tree::ImageKind::SVG(data.to_vec(), opt.clone()))
                     }
                 }
             }
@@ -101,7 +101,7 @@ pub fn get_href_data(
                     Some(tree::ImageKind::PNG(data))
                 }
                 Some(ImageFormat::SVG) => {
-                    load_sub_svg(&data, opt)
+                    Some(tree::ImageKind::SVG(data, opt.clone()))
                 }
                 _ => {
                     warn!("'{}' is not a PNG, JPEG or SVG(Z) image.", href);
@@ -142,7 +142,7 @@ fn get_image_data_format(data: &[u8]) -> Option<ImageFormat> {
 ///
 /// Unlike `Tree::from_*` methods, this one will also remove all `image` elements
 /// from the loaded SVG, as required by the spec.
-pub fn load_sub_svg(data: &[u8], opt: &Options) -> Option<tree::ImageKind> {
+pub fn load_sub_svg(data: &[u8], opt: &Options) -> Option<crate::Tree> {
     let sub_opt = Options {
         resources_dir: None,
         dpi: opt.dpi,
@@ -166,7 +166,7 @@ pub fn load_sub_svg(data: &[u8], opt: &Options) -> Option<tree::ImageKind> {
     };
 
     sanitize_sub_svg(&tree);
-    Some(tree::ImageKind::SVG(tree))
+    Some(tree)
 }
 
 fn sanitize_sub_svg(tree: &crate::Tree) {

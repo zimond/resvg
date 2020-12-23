@@ -60,8 +60,10 @@ pub fn draw_kind(
                 None => warn!("Failed to load an embedded raw image."),
             }
         }
-        usvg::ImageKind::SVG(ref subtree) => {
-            draw_svg(subtree, view_box, canvas);
+        usvg::ImageKind::SVG(ref subtree, ref opts) => {
+            if let Some(tree) = usvg::load_sub_svg(subtree, opts) {
+                draw_svg(&tree, view_box, canvas);
+            }
         }
     }
 }

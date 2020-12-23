@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std::fmt;
+use crate::Options;
 
 pub use svgtypes::{
     Align,
@@ -290,7 +291,7 @@ pub enum ImageKind {
     /// A raw PNG data. Should be decoded by the caller.
     PNG(Vec<u8>),
     /// A preprocessed SVG tree. Can be rendered as is.
-    SVG(crate::Tree),
+    SVG(Vec<u8>, Options),
     /// A raw BMP data, No need to decode
     RAW(Vec<u8>),
 }
@@ -300,7 +301,7 @@ impl fmt::Debug for ImageKind {
         match self {
             ImageKind::JPEG(_) => f.write_str("ImageKind::JPEG(..)"),
             ImageKind::PNG(_) => f.write_str("ImageKind::PNG(..)"),
-            ImageKind::SVG(_) => f.write_str("ImageKind::SVG(..)"),
+            ImageKind::SVG(_, _) => f.write_str("ImageKind::SVG(..)"),
             ImageKind::RAW(_) => f.write_str("ImageKind::RAW(..)"),
         }
     }

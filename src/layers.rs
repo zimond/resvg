@@ -4,12 +4,11 @@
 
 use std::cell::RefCell;
 use std::ops::Deref;
-use std::rc::Rc;
+use std::sync::Arc;
 
 use usvg::ScreenSize;
 
-
-type LayerData = Rc<RefCell<tiny_skia::Pixmap>>;
+type LayerData = Arc<RefCell<tiny_skia::Pixmap>>;
 
 /// Stack of image layers.
 ///
@@ -17,8 +16,8 @@ type LayerData = Rc<RefCell<tiny_skia::Pixmap>>;
 /// we are reusing an existing one.
 pub struct Layers {
     d: Vec<LayerData>,
-    /// Use Rc as a shared counter.
-    counter: Rc<()>,
+    /// Use Arc as a shared counter.
+    counter: Arc<()>,
     img_size: ScreenSize,
 }
 
@@ -27,7 +26,7 @@ impl Layers {
     pub fn new(img_size: ScreenSize) -> Self {
         Layers {
             d: Vec::new(),
-            counter: Rc::new(()),
+            counter: Arc::new(()),
             img_size,
         }
     }
@@ -44,19 +43,17 @@ impl Layers {
     /// - If there is a free layer - it will clear it before return.
     /// - If a new layer allocation fail - will return `None`.
     pub fn get(&mut self) -> Option<Layer> {
-        let used_layers = Rc::strong_count(&self.counter) - 1;
+        let used_layers = Arc::strong_count(&self.counter) - 1;
         if used_layers == self.d.len() {
             match tiny_skia::Pixmap::new(self.img_size.width(), self.img_size.height()) {
                 Some(pixmap) => {
-                    self.d.push(Rc::new(RefCell::new(pixmap)));
+                    self.d.push(Arc::new(RefCell::new(pixmap)));
                     Some(Layer {
                         d: self.d[self.d.len() - 1].clone(),
                         _counter_holder: self.counter.clone(),
                     })
                 }
-                None => {
-                    None
-                }
+                None => None,
             }
         } else {
             {
@@ -74,7 +71,7 @@ impl Layers {
 
 impl Drop for Layers {
     fn drop(&mut self) {
-        debug_assert!(Rc::strong_count(&self.counter) == 1);
+        debug_assert!(Arc::strong_count(&self.counter) == 1);
     }
 }
 
@@ -82,7 +79,7 @@ impl Drop for Layers {
 pub struct Layer {
     d: LayerData,
     // When Layer goes out of scope, Layers::counter will be automatically decreased.
-    _counter_holder: Rc<()>,
+    _counter_holder: Arc<()>,
 }
 
 impl Deref for Layer {

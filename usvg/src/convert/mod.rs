@@ -26,6 +26,7 @@ mod prelude {
     pub use super::{SvgNodeExt, State};
 }
 use self::prelude::*;
+pub use image::load_sub_svg;
 
 
 #[derive(Clone)]
