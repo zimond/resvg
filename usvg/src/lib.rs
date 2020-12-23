@@ -177,6 +177,7 @@ mod geom;
 mod options;
 mod svgtree;
 mod tree;
+pub use svgtree::EnumFromStr;
 #[cfg(feature = "text")] mod fontdb_ext;
 
 /// Shorthand names for modules.
