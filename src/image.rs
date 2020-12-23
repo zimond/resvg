@@ -4,6 +4,7 @@
 
 use log::warn;
 use crate::render::prelude::*;
+use std::io::prelude::*;
 
 pub fn draw(
     image: &usvg::Image,
@@ -15,6 +16,23 @@ pub fn draw(
 
     draw_kind(&image.kind, image.view_box, image.rendering_mode, canvas);
     image.view_box.rect
+}
+
+fn read_raw(data: &[u8]) -> Option<Image> {
+    let mut r = data.clone();
+    let mut width_vec = [0u8; 4];
+    let mut height_vec = [0u8; 4];
+    r.read_exact(&mut width_vec).ok()?;
+    r.read_exact(&mut height_vec).ok()?;
+    let width: u32 = u32::from_be_bytes(width_vec);
+    let height: u32 = u32::from_be_bytes(height_vec);
+
+    let size = ScreenSize::new(width, height)?;
+
+    let mut rgba_vec = vec![0; (width * height * 4) as usize];
+    r.read_exact(&mut rgba_vec).ok()?;
+    let data = ImageData::RGBA(rgba_vec);
+    Some(Image { data, size })
 }
 
 pub fn draw_kind(
@@ -34,6 +52,12 @@ pub fn draw_kind(
             match read_png(data) {
                 Some(image) => { draw_raster(&image, view_box, rendering_mode, canvas); }
                 None => warn!("Failed to load an embedded image."),
+            }
+        }
+        usvg::ImageKind::RAW(ref data) => {
+            match read_raw(data) {
+                Some(image) => { draw_raster(&image, view_box, rendering_mode, canvas); }
+                None => warn!("Failed to load an embedded raw image."),
             }
         }
         usvg::ImageKind::SVG(ref subtree) => {

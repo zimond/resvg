@@ -66,6 +66,7 @@ pub fn get_href_data(
             ("image", "jpg") | ("image", "jpeg") => Some(tree::ImageKind::JPEG(data)),
             ("image", "png") => Some(tree::ImageKind::PNG(data)),
             ("image", "svg+xml") => load_sub_svg(&data, opt),
+            ("image", "raw") => Some(tree::ImageKind::RAW(data)),
             ("text", "plain") => {
                 match get_image_data_format(&data) {
                     Some(ImageFormat::JPEG) => {
