@@ -3,8 +3,8 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std::collections::HashMap;
-use std::sync::Arc;
 use std::str::FromStr;
+use std::sync::Arc;
 
 use log::warn;
 
@@ -521,7 +521,8 @@ fn parse_number(value: &str) -> Result<f64, svgtypes::Error> {
 }
 
 #[inline(never)]
-fn parse_path(text: &str) -> tree::PathData {
+#[allow(missing_doc)]
+pub fn parse_path(text: &str) -> tree::PathData {
     // Previous MoveTo coordinates.
     let mut prev_mx = 0.0;
     let mut prev_my = 0.0;

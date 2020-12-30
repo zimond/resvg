@@ -177,7 +177,7 @@ mod geom;
 mod options;
 mod svgtree;
 mod tree;
-pub use svgtree::EnumFromStr;
+pub use svgtree::{EnumFromStr, parse_path};
 pub use convert::load_sub_svg;
 #[cfg(feature = "text")] mod fontdb_ext;
 
