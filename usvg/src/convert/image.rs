@@ -6,6 +6,7 @@ use std::path;
 
 use crate::{svgtree, tree, tree::prelude::*, utils};
 use super::prelude::*;
+use std::io::prelude::*;
 
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -66,7 +67,16 @@ pub fn get_href_data(
             ("image", "jpg") | ("image", "jpeg") => Some(tree::ImageKind::JPEG(data)),
             ("image", "png") => Some(tree::ImageKind::PNG(data)),
             ("image", "svg+xml") => Some(tree::ImageKind::SVG(data.to_vec(), opt.clone())),
-            ("image", "raw") => Some(tree::ImageKind::RAW(data)),
+            ("image", "raw") => {
+                let mut buf = data.as_slice();
+                let mut width_vec = [0u8; 4];
+                let mut height_vec = [0u8; 4];
+                buf.read_exact(&mut width_vec).ok()?;
+                buf.read_exact(&mut height_vec).ok()?;
+                let width: u32 = u32::from_be_bytes(width_vec);
+                let height: u32 = u32::from_be_bytes(height_vec);
+                Some(tree::ImageKind::RAW(width, height, buf.to_vec()))
+            },
             ("text", "plain") => {
                 match get_image_data_format(&data) {
                     Some(ImageFormat::JPEG) => {

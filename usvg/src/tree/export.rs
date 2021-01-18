@@ -662,6 +662,7 @@ impl XmlWriterExt for XmlWriter {
     }
 
     fn write_image_data(&mut self, kind: &ImageKind) {
+        let mut buf = vec![];
         let (mime, data) = match kind {
             ImageKind::JPEG(ref data) => {
                 ("jpg", data.as_slice())
@@ -669,8 +670,11 @@ impl XmlWriterExt for XmlWriter {
             ImageKind::PNG(ref data) => {
                 ("png", data.as_slice())
             }
-            ImageKind::RAW(ref data) => {
-                ("raw", data.as_slice())
+            ImageKind::RAW(width, height, ref data) => {
+                buf.extend_from_slice(&width.to_be_bytes());
+                buf.extend_from_slice(&height.to_be_bytes());
+                buf.append(&mut data.clone());
+                ("raw", buf.as_slice())
             }
             ImageKind::SVG(ref tree, _) => {
                 ("svg+xml", tree.as_slice())
