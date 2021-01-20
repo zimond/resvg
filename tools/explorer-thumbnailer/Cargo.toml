@@ -1,6 +1,6 @@
 [package]
 name = "explorer-thumbnailer"
-version = "0.13.0"
+version = "0.13.1"
 authors = ["gentoo90 <gentoo90@gmail.com>"]
 license = "MPL-2.0"
 edition = "2018"
@@ -15,7 +15,7 @@ log = "0.4"
 winlog = "0.2"
 resvg = { path = "../.." }
 usvg = { path = "../../usvg" }
-tiny-skia = "0.3"
+tiny-skia = "0.4.1"
 
 [lib]
 # name can only be "server.dll", see https://github.com/microsoft/com-rs/issues/157
