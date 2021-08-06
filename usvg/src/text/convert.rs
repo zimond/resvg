@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use svgtypes::{Length, LengthUnit};
 use strict_num::NonZeroPositiveF64;
@@ -82,7 +82,7 @@ pub struct TextPath {
 #[derive(Clone)]
 pub enum TextFlow {
     Horizontal,
-    Path(Rc<TextPath>),
+    Path(Arc<TextPath>),
 }
 
 
@@ -339,7 +339,7 @@ fn resolve_text_flow(
     let path = if let Some(node_transform) = linked_node.attribute::<Transform>(AId::Transform) {
         let mut path_copy = path.as_ref().clone();
         path_copy.transform(node_transform);
-        Rc::new(path_copy)
+        Arc::new(path_copy)
     } else {
         path
     };
@@ -355,7 +355,7 @@ fn resolve_text_flow(
     };
 
 
-    Some(TextFlow::Path(Rc::new(TextPath {
+    Some(TextFlow::Path(Arc::new(TextPath {
         start_offset,
         path,
     })))

@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use usvg::NodeExt;
 
@@ -21,7 +21,9 @@ fn main() {
 
     let mut opt = usvg::Options::default();
     // Get file's absolute directory.
-    opt.resources_dir = std::fs::canonicalize(&args[1]).ok().and_then(|p| p.parent().map(|p| p.to_path_buf()));
+    opt.resources_dir = std::fs::canonicalize(&args[1])
+        .ok()
+        .and_then(|p| p.parent().map(|p| p.to_path_buf()));
     opt.keep_named_groups = true;
     opt.fontdb.load_system_fonts();
     let fit_to = usvg::FitTo::Zoom(zoom);
@@ -61,7 +63,7 @@ fn main() {
     for bbox in bboxes {
         rtree.root().append_kind(usvg::NodeKind::Path(usvg::Path {
             stroke: stroke.clone(),
-            data: Rc::new(usvg::PathData::from_rect(bbox)),
+            data: Arc::new(usvg::PathData::from_rect(bbox)),
             .. usvg::Path::default()
         }));
     }
@@ -69,7 +71,7 @@ fn main() {
     for bbox in text_bboxes {
         rtree.root().append_kind(usvg::NodeKind::Path(usvg::Path {
             stroke: stroke2.clone(),
-            data: Rc::new(usvg::PathData::from_rect(bbox)),
+            data: Arc::new(usvg::PathData::from_rect(bbox)),
             .. usvg::Path::default()
         }));
     }

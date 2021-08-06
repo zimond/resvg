@@ -2,19 +2,21 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 mod convert;
-mod shaper;
 mod fontdb_ext;
+mod shaper;
 
-use crate::{FillRule, Group, Node, NodeExt, NodeKind, Paint, Path, PathData, PathSegment, Rect, Color};
-use crate::{ShapeRendering, Stroke, StrokeWidth, Transform, TransformFromBBox, Tree, Units};
 use crate::PathBbox;
 use crate::{converter, svgtree};
-use convert::{TextFlow, WritingMode, TextSpan};
-use shaper::OutlinedCluster;
+use crate::{
+    Color, FillRule, Group, Node, NodeExt, NodeKind, Paint, Path, PathData, PathSegment, Rect,
+};
+use crate::{ShapeRendering, Stroke, StrokeWidth, Transform, TransformFromBBox, Tree, Units};
 use convert::TextDecorationStyle;
+use convert::{TextFlow, TextSpan, WritingMode};
+use shaper::OutlinedCluster;
 
 mod private {
     use crate::svgtree::{self, EId};
@@ -42,7 +44,6 @@ mod private {
 }
 use private::TextNode;
 
-
 /// A text decoration span.
 ///
 /// Basically a horizontal line, that will be used for underline, overline and line-through.
@@ -52,7 +53,6 @@ struct DecorationSpan {
     width: f64,
     transform: Transform,
 }
-
 
 pub(crate) fn convert(
     node: svgtree::Node,
@@ -96,7 +96,11 @@ fn text_to_paths(
 ) -> (Vec<Path>, PathBbox) {
     let abs_ts = {
         let mut ts = parent.abs_transform();
-        ts.append(&text_node.attribute(svgtree::AId::Transform).unwrap_or_default());
+        ts.append(
+            &text_node
+                .attribute(svgtree::AId::Transform)
+                .unwrap_or_default(),
+        );
         ts
     };
 
@@ -126,7 +130,13 @@ fn text_to_paths(
         shaper::apply_letter_spacing(chunk, &mut clusters);
         shaper::apply_word_spacing(chunk, &mut clusters);
         let mut curr_pos = shaper::resolve_clusters_positions(
-            chunk, char_offset, &pos_list, &rotate_list, writing_mode, abs_ts, &mut clusters
+            chunk,
+            char_offset,
+            &pos_list,
+            &rotate_list,
+            writing_mode,
+            abs_ts,
+            &mut clusters,
         );
 
         let mut text_ts = Transform::default();
@@ -158,9 +168,7 @@ fn text_to_paths(
                     WritingMode::TopToBottom => span.font.height(span.font_size.get()) / 2.0,
                 };
 
-                let path = convert_decoration(
-                    offset, span, decoration, &decoration_spans, span_ts,
-                );
+                let path = convert_decoration(offset, span, decoration, &decoration_spans, span_ts);
 
                 if let Some(r) = path.data.bbox() {
                     bbox = bbox.expand(r);
@@ -175,9 +183,7 @@ fn text_to_paths(
                     WritingMode::TopToBottom => -span.font.height(span.font_size.get()) / 2.0,
                 };
 
-                let path = convert_decoration(
-                    offset, span, decoration, &decoration_spans, span_ts,
-                );
+                let path = convert_decoration(offset, span, decoration, &decoration_spans, span_ts);
 
                 if let Some(r) = path.data.bbox() {
                     bbox = bbox.expand(r);
@@ -201,9 +207,7 @@ fn text_to_paths(
                     WritingMode::TopToBottom => 0.0,
                 };
 
-                let path = convert_decoration(
-                    offset, span, decoration, &decoration_spans, span_ts,
-                );
+                let path = convert_decoration(offset, span, decoration, &decoration_spans, span_ts);
 
                 if let Some(r) = path.data.bbox() {
                     bbox = bbox.expand(r);
@@ -289,18 +293,14 @@ fn convert_span(
         stroke: span.stroke.take(),
         rendering_mode: ShapeRendering::default(),
         text_bbox: bboxes_data.bbox().and_then(|r| r.to_rect()),
-        data: Rc::new(path_data),
+        data: Arc::new(path_data),
     };
 
     Some(path)
 }
 
 // Only for debug purposes.
-fn dump_cluster(
-    cluster: &OutlinedCluster,
-    text_ts: Transform,
-    parent: &mut Node,
-) {
+fn dump_cluster(cluster: &OutlinedCluster, text_ts: Transform, parent: &mut Node) {
     fn new_stroke(color: Color) -> Option<Stroke> {
         Some(Stroke {
             paint: Paint::Color(color),
@@ -311,28 +311,28 @@ fn dump_cluster(
 
     let mut base_path = Path {
         transform: text_ts,
-        .. Path::default()
+        ..Path::default()
     };
 
     // Cluster bbox.
     let r = Rect::new(0.0, -cluster.ascent, cluster.advance, cluster.height()).unwrap();
     base_path.stroke = new_stroke(Color::new_rgb(0, 0, 255));
-    base_path.data = Rc::new(PathData::from_rect(r));
+    base_path.data = Arc::new(PathData::from_rect(r));
     parent.append_kind(NodeKind::Path(base_path.clone()));
 
     // Baseline.
     base_path.stroke = new_stroke(Color::new_rgb(255, 0, 0));
-    base_path.data = Rc::new(PathData(vec![
-        PathSegment::MoveTo { x: 0.0,             y: 0.0 },
-        PathSegment::LineTo { x: cluster.advance, y: 0.0 },
+    base_path.data = Arc::new(PathData(vec![
+        PathSegment::MoveTo { x: 0.0, y: 0.0 },
+        PathSegment::LineTo {
+            x: cluster.advance,
+            y: 0.0,
+        },
     ]));
     parent.append_kind(NodeKind::Path(base_path));
 }
 
-fn collect_decoration_spans(
-    span: &TextSpan,
-    clusters: &[OutlinedCluster],
-) -> Vec<DecorationSpan> {
+fn collect_decoration_spans(span: &TextSpan, clusters: &[OutlinedCluster]) -> Vec<DecorationSpan> {
     let mut spans = Vec::new();
 
     let mut started = false;
@@ -378,12 +378,7 @@ fn convert_decoration(
 
     let mut path = PathData::new();
     for dec_span in decoration_spans {
-        let rect = Rect::new(
-            0.0,
-            -thickness / 2.0,
-            dec_span.width,
-            thickness,
-        ).unwrap();
+        let rect = Rect::new(0.0, -thickness / 2.0, dec_span.width, thickness).unwrap();
 
         let start_idx = path.len();
         path.push_rect(rect);
@@ -399,19 +394,15 @@ fn convert_decoration(
         visibility: span.visibility,
         fill: decoration.fill.take(),
         stroke: decoration.stroke.take(),
-        data: Rc::new(path),
-        .. Path::default()
+        data: Arc::new(path),
+        ..Path::default()
     }
 }
 
 /// By the SVG spec, `tspan` doesn't have a bbox and uses the parent `text` bbox.
 /// Since we converted `text` and `tspan` to `path`, we have to update
 /// all linked paint servers (gradients and patterns) too.
-fn fix_obj_bounding_box(
-    path: &mut Path,
-    bbox: PathBbox,
-    tree: &mut Tree,
-) {
+fn fix_obj_bounding_box(path: &mut Path, bbox: PathBbox, tree: &mut Tree) {
     if let Some(ref mut fill) = path.fill {
         if let Paint::Link(ref mut id) = fill.paint {
             if let Some(new_id) = paint_server_to_user_space_on_use(id, bbox, tree) {
@@ -434,11 +425,7 @@ fn fix_obj_bounding_box(
 /// Creates a deep copy of a selected paint server and returns its ID.
 ///
 /// Returns `None` if a paint server already uses `UserSpaceOnUse`.
-fn paint_server_to_user_space_on_use(
-    id: &str,
-    bbox: PathBbox,
-    tree: &mut Tree,
-) -> Option<String> {
+fn paint_server_to_user_space_on_use(id: &str, bbox: PathBbox, tree: &mut Tree) -> Option<String> {
     if let Some(mut ps) = tree.defs_by_id(id) {
         if ps.units() != Some(Units::ObjectBoundingBox) {
             return None;

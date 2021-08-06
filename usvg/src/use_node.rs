@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use svgtypes::{Length, LengthUnit};
 
@@ -207,7 +207,7 @@ fn clip_element(
 
     clip_path.append_kind(NodeKind::Path(Path {
         fill: Some(style::Fill::default()),
-        data: Rc::new(PathData::from_rect(clip_rect)),
+        data: Arc::new(PathData::from_rect(clip_rect)),
         ..Path::default()
     }));
 
@@ -255,7 +255,10 @@ fn get_clip_rect(
     state: &converter::State,
 ) -> Option<Rect> {
     // No need to clip elements with overflow:visible.
-    if matches!(symbol_node.attribute(AId::Overflow), Some("visible") | Some("auto")) {
+    if matches!(
+        symbol_node.attribute(AId::Overflow),
+        Some("visible") | Some("auto")
+    ) {
         return None;
     }
 
@@ -311,7 +314,9 @@ fn viewbox_transform(
 
     let size = Size::new(w, h)?;
     let vb = linked.get_viewbox()?;
-    let aspect = linked.attribute(AId::PreserveAspectRatio).unwrap_or_default();
+    let aspect = linked
+        .attribute(AId::PreserveAspectRatio)
+        .unwrap_or_default();
 
     Some(utils::view_box_to_transform(vb, aspect, size))
 }

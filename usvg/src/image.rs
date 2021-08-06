@@ -5,9 +5,11 @@
 use std::sync::Arc;
 use svgtypes::Length;
 
-use crate::{ImageRendering, Node, NodeExt, NodeKind, OptionLog, OptionsRef, Tree, Visibility, converter};
 use crate::geom::{Rect, Transform, ViewBox};
 use crate::svgtree::{self, AId};
+use crate::{
+    converter, ImageRendering, Node, NodeExt, NodeKind, OptionLog, OptionsRef, Tree, Visibility,
+};
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 enum ImageFormat {
@@ -28,6 +30,8 @@ pub enum ImageKind {
     GIF(Arc<Vec<u8>>),
     /// A preprocessed SVG tree. Can be rendered as is.
     SVG(crate::Tree),
+    /// RAW Image
+    RAW(u32, u32, Vec<u8>),
 }
 
 impl std::fmt::Debug for ImageKind {
@@ -37,14 +41,17 @@ impl std::fmt::Debug for ImageKind {
             ImageKind::PNG(_) => f.write_str("ImageKind::PNG(..)"),
             ImageKind::GIF(_) => f.write_str("ImageKind::GIF(..)"),
             ImageKind::SVG(_) => f.write_str("ImageKind::SVG(..)"),
+            ImageKind::RAW(_, _, _) => f.write_str("ImageKind::RAW(..)"),
         }
     }
 }
 
 /// A shorthand for [ImageHrefResolver]'s data function.
-pub type ImageHrefDataResolverFn = Box<dyn Fn(&str, Arc<Vec<u8>>, &OptionsRef) -> Option<ImageKind> + Send + Sync>;
+pub type ImageHrefDataResolverFn =
+    Box<dyn Fn(&str, Arc<Vec<u8>>, &OptionsRef) -> Option<ImageKind> + Send + Sync>;
 /// A shorthand for [ImageHrefResolver]'s string function.
-pub type ImageHrefStringResolverFn = Box<dyn Fn(&str, &OptionsRef) -> Option<ImageKind> + Send + Sync>;
+pub type ImageHrefStringResolverFn =
+    Box<dyn Fn(&str, &OptionsRef) -> Option<ImageKind> + Send + Sync>;
 
 /// An `xlink:href` resolver for `<image>` elements.
 ///
@@ -66,7 +73,7 @@ impl Default for ImageHrefResolver {
     fn default() -> Self {
         ImageHrefResolver {
             resolve_data: ImageHrefResolver::default_data_resolver(),
-            resolve_string: ImageHrefResolver::default_string_resolver()
+            resolve_string: ImageHrefResolver::default_string_resolver(),
         }
     }
 }
@@ -87,6 +94,17 @@ impl ImageHrefResolver {
                 "image/jpg" | "image/jpeg" => Some(ImageKind::JPEG(data)),
                 "image/png" => Some(ImageKind::PNG(data)),
                 "image/gif" => Some(ImageKind::GIF(data)),
+                "image/raw" => {
+                    use std::io::Read;
+                    let mut buf = data.as_slice();
+                    let mut width_vec = [0u8; 4];
+                    let mut height_vec = [0u8; 4];
+                    buf.read_exact(&mut width_vec).ok()?;
+                    buf.read_exact(&mut height_vec).ok()?;
+                    let width: u32 = u32::from_be_bytes(width_vec);
+                    let height: u32 = u32::from_be_bytes(height_vec);
+                    Some(ImageKind::RAW(width, height, buf.to_vec()))
+                }
                 "image/svg+xml" => load_sub_svg(&data, opts),
                 "text/plain" => match get_image_data_format(&data) {
                     Some(ImageFormat::JPEG) => Some(ImageKind::JPEG(data)),
@@ -95,7 +113,7 @@ impl ImageHrefResolver {
                     _ => load_sub_svg(&data, opts),
                 },
                 _ => None,
-            }
+            },
         )
     }
 
@@ -199,7 +217,8 @@ pub(crate) fn convert(
         aspect: node.attribute(AId::PreserveAspectRatio).unwrap_or_default(),
     };
 
-    let href = node.attribute(AId::Href)
+    let href = node
+        .attribute(AId::Href)
         .log_none(|| log::warn!("Image lacks the 'xlink:href' attribute. Skipped."))?;
 
     let kind = get_href_data(href, state.opt)?;

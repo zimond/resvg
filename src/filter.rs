@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use rgb::FromSlice;
 use usvg::{FuzzyZero, NodeExt, TransformFromBBox};
@@ -147,7 +147,7 @@ struct Image {
     /// Filter primitive result.
     ///
     /// All images have the same size which is equal to the current filter region.
-    image: Rc<tiny_skia::Pixmap>,
+    image: Arc<tiny_skia::Pixmap>,
 
     /// Image's region that has actual data.
     ///
@@ -166,7 +166,7 @@ impl Image {
     fn from_image(image: tiny_skia::Pixmap, color_space: usvg::filter::ColorInterpolation) -> Self {
         let (w, h) = (image.width(), image.height());
         Image {
-            image: Rc::new(image),
+            image: Arc::new(image),
             region: usvg::ScreenRect::new(0, 0, w, h).unwrap(),
             color_space,
         }
@@ -184,7 +184,7 @@ impl Image {
             }
 
             Ok(Image {
-                image: Rc::new(image),
+                image: Arc::new(image),
                 region,
                 color_space,
             })
@@ -194,7 +194,7 @@ impl Image {
     }
 
     fn take(self) -> Result<tiny_skia::Pixmap, Error> {
-        match Rc::try_unwrap(self.image) {
+        match Arc::try_unwrap(self.image) {
             Ok(v) => Ok(v),
             Err(v) => Ok((*v).clone()),
         }
@@ -392,7 +392,7 @@ fn _apply(
             };
 
             result = Image {
-                image: Rc::new(pixmap),
+                image: Arc::new(pixmap),
                 region: subregion,
                 color_space,
             };
@@ -531,7 +531,7 @@ fn get_input(
         };
 
         Ok(Image {
-            image: Rc::new(image),
+            image: Arc::new(image),
             region: region.translate_to(0, 0),
             color_space: usvg::filter::ColorInterpolation::SRGB,
         })
@@ -546,7 +546,7 @@ fn get_input(
         }
 
         Ok(Image {
-            image: Rc::new(image),
+            image: Arc::new(image),
             region: region.translate_to(0, 0),
             color_space: usvg::filter::ColorInterpolation::SRGB,
         })
@@ -557,7 +557,7 @@ fn get_input(
             let image = inputs.source.copy_region(region)?;
 
             Ok(Image {
-                image: Rc::new(image),
+                image: Arc::new(image),
                 region: region.translate_to(0, 0),
                 color_space: usvg::filter::ColorInterpolation::SRGB,
             })

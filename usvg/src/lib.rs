@@ -446,7 +446,7 @@ pub struct Path {
     /// Segments list.
     ///
     /// All segments are in absolute coordinates.
-    pub data: std::rc::Rc<PathData>,
+    pub data: std::sync::Arc<PathData>,
 }
 
 impl Default for Path {
@@ -459,7 +459,7 @@ impl Default for Path {
             stroke: None,
             rendering_mode: ShapeRendering::default(),
             text_bbox: None,
-            data: std::rc::Rc::new(PathData::default()),
+            data: std::sync::Arc::new(PathData::default()),
         }
     }
 }

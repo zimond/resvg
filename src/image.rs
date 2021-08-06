@@ -13,6 +13,17 @@ pub fn draw(image: &usvg::Image, canvas: &mut Canvas) -> usvg::PathBbox {
     image.view_box.rect.to_path_bbox()
 }
 
+fn read_raw(width: u32, height: u32, data: &[u8]) -> Option<Image> {
+    let size = usvg::ScreenSize::new(width, height)?;
+
+    if width * height * 4 != data.len() as u32 {
+        return  None;
+    }
+
+    let data = ImageData::RGBA(data.to_vec());
+    Some(Image { data, size })
+}
+
 pub fn draw_kind(
     kind: &usvg::ImageKind,
     view_box: usvg::ViewBox,
@@ -43,6 +54,16 @@ pub fn draw_kind(
                 Some(image) => { raster_images::draw_raster(&image, view_box, rendering_mode, canvas); }
                 None => log::warn!("Failed to decode a GIF image."),
             }
+        }
+        #[cfg(feature = "raster-images")]
+        usvg::ImageKind::RAW(width, height, ref data) => {
+            match read_raw(width.to_owned(), height.to_owned(), data) {
+                Some(image) => { raster_images::draw_raster(&image, view_box, rendering_mode, canvas); }
+                None => log::warn!("Failed to load an embedded raw image."),
+            }
+        }
+        usvg::ImageKind::SVG(ref subtree) => {
+            draw_svg(subtree, view_box, canvas);
         }
         #[cfg(not(feature = "raster-images"))]
         _ => {
