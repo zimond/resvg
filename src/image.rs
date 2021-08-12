@@ -70,6 +70,19 @@ pub fn draw_kind(
             log::warn!("Images decoding was disabled by a build feature.");
         }
     }
+    Some(pixmap)
+}
+
+#[allow(unused)]
+struct IntSize {
+    width: core::num::NonZeroU32,
+    height: core::num::NonZeroU32
+}
+
+#[allow(unused)]
+struct PixmapMirror {
+    data: Vec<u8>,
+    size: IntSize
 }
 
 fn draw_svg(

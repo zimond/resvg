@@ -15,6 +15,7 @@ mod names;
 #[cfg(feature = "text")] mod text;
 
 pub use names::{EId, AId};
+pub use parse::parse_path;
 use svgtypes::Length;
 use strict_num::NonZeroPositiveF64;
 

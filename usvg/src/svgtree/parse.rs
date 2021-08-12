@@ -572,7 +572,7 @@ fn parse_svg_attribute(
 }
 
 #[inline(never)]
-fn parse_path(text: &str) -> crate::PathData {
+pub fn parse_path(text: &str) -> crate::PathData {
     // Previous MoveTo coordinates.
     let mut prev_mx = 0.0;
     let mut prev_my = 0.0;

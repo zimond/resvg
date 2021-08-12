@@ -143,6 +143,7 @@ pub use crate::options::*;
 pub use crate::paint_server::*;
 pub use crate::pathdata::*;
 pub use crate::style::*;
+pub use crate::svgtree::{EnumFromStr, parse_path};
 
 
 trait OptionLog {
