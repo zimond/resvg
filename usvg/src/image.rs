@@ -8,7 +8,7 @@ use svgtypes::Length;
 use crate::geom::{Rect, Transform, ViewBox};
 use crate::svgtree::{self, AId};
 use crate::{
-    converter, ImageRendering, Node, NodeExt, NodeKind, OptionLog, OptionsRef, Tree, Visibility,
+    converter, ImageRendering, Node, NodeExt, NodeKind, OptionLog, OptionsRef, Visibility,
 };
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -29,7 +29,7 @@ pub enum ImageKind {
     /// A reference to raw GIF data. Should be decoded by the caller.
     GIF(Arc<Vec<u8>>),
     /// A preprocessed SVG tree. Can be rendered as is.
-    SVG(crate::Tree),
+    SVG(Vec<u8>),
     /// RAW Image
     RAW(u32, u32, Vec<u8>),
 }
@@ -280,20 +280,20 @@ fn get_image_data_format(data: &[u8]) -> Option<ImageFormat> {
 /// Unlike `Tree::from_*` methods, this one will also remove all `image` elements
 /// from the loaded SVG, as required by the spec.
 pub(crate) fn load_sub_svg(data: &[u8], opt: &OptionsRef) -> Option<ImageKind> {
-    let mut sub_opt = opt.clone();
-    sub_opt.resources_dir = None;
-    sub_opt.keep_named_groups = false;
+    // let mut sub_opt = opt.clone();
+    // sub_opt.resources_dir = None;
+    // sub_opt.keep_named_groups = false;
 
-    let tree = match Tree::from_data(data, &sub_opt) {
-        Ok(tree) => tree,
-        Err(_) => {
-            log::warn!("Failed to load subsvg image.");
-            return None;
-        }
-    };
+    // let tree = match Tree::from_data(data, &sub_opt) {
+    //     Ok(tree) => tree,
+    //     Err(_) => {
+    //         log::warn!("Failed to load subsvg image.");
+    //         return None;
+    //     }
+    // };
 
-    sanitize_sub_svg(&tree);
-    Some(ImageKind::SVG(tree))
+    // sanitize_sub_svg(&tree);
+    Some(ImageKind::SVG(data.to_vec()))
 }
 
 fn sanitize_sub_svg(tree: &crate::Tree) {

@@ -63,7 +63,8 @@ pub fn draw_kind(
             }
         }
         usvg::ImageKind::SVG(ref subtree) => {
-            draw_svg(subtree, view_box, canvas);
+            let tree = usvg::Tree::from_data(subtree.as_slice(), &usvg::Options::default().to_ref()).unwrap();
+            draw_svg(&tree, view_box, canvas);
         }
         #[cfg(not(feature = "raster-images"))]
         _ => {

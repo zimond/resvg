@@ -754,7 +754,6 @@ impl XmlWriterExt for XmlWriter {
     }
 
     fn write_image_data(&mut self, kind: &crate::ImageKind) {
-        let svg_string;
         let mut buf = vec![];
         let (mime, data) = match kind {
             crate::ImageKind::JPEG(ref data) => {
@@ -767,8 +766,7 @@ impl XmlWriterExt for XmlWriter {
                 ("gif", data.as_slice())
             }
             crate::ImageKind::SVG(ref tree) => {
-                svg_string = tree.to_string(&XmlOptions::default());
-                ("svg+xml", svg_string.as_bytes())
+                ("svg+xml", tree.as_slice())
             }
             crate::ImageKind::RAW(width, height, ref data) => {
                 buf.extend_from_slice(&width.to_be_bytes());
