@@ -13,17 +13,6 @@ pub fn draw(image: &usvg::Image, canvas: &mut Canvas) -> usvg::PathBbox {
     image.view_box.rect.to_path_bbox()
 }
 
-fn read_raw(width: u32, height: u32, data: &[u8]) -> Option<Image> {
-    let size = usvg::ScreenSize::new(width, height)?;
-
-    if width * height * 4 != data.len() as u32 {
-        return  None;
-    }
-
-    let data = ImageData::RGBA(data.to_vec());
-    Some(Image { data, size })
-}
-
 pub fn draw_kind(
     kind: &usvg::ImageKind,
     view_box: usvg::ViewBox,
@@ -32,7 +21,8 @@ pub fn draw_kind(
 ) {
     match kind {
         usvg::ImageKind::SVG(ref subtree) => {
-            draw_svg(subtree, view_box, canvas);
+            let tree = usvg::Tree::from_data(subtree.as_slice(), &usvg::Options::default().to_ref()).unwrap();
+            draw_svg(&tree, view_box, canvas);
         }
         #[cfg(feature = "raster-images")]
         usvg::ImageKind::JPEG(ref data) => {
@@ -57,33 +47,16 @@ pub fn draw_kind(
         }
         #[cfg(feature = "raster-images")]
         usvg::ImageKind::RAW(width, height, ref data) => {
-            match read_raw(width.to_owned(), height.to_owned(), data) {
+            match raster_images::read_raw(width.to_owned(), height.to_owned(), data) {
                 Some(image) => { raster_images::draw_raster(&image, view_box, rendering_mode, canvas); }
                 None => log::warn!("Failed to load an embedded raw image."),
             }
-        }
-        usvg::ImageKind::SVG(ref subtree) => {
-            let tree = usvg::Tree::from_data(subtree.as_slice(), &usvg::Options::default().to_ref()).unwrap();
-            draw_svg(&tree, view_box, canvas);
         }
         #[cfg(not(feature = "raster-images"))]
         _ => {
             log::warn!("Images decoding was disabled by a build feature.");
         }
     }
-    Some(pixmap)
-}
-
-#[allow(unused)]
-struct IntSize {
-    width: core::num::NonZeroU32,
-    height: core::num::NonZeroU32
-}
-
-#[allow(unused)]
-struct PixmapMirror {
-    data: Vec<u8>,
-    size: IntSize
 }
 
 fn draw_svg(
@@ -309,6 +282,17 @@ mod raster_images {
             data: ImageData::RGBA(first_frame.buffer.to_vec()),
             size,
         })
+    }
+
+    pub fn read_raw(width: u32, height: u32, data: &[u8]) -> Option<Image> {
+        let size = usvg::ScreenSize::new(width, height)?;
+
+        if width * height * 4 != data.len() as u32 {
+            return  None;
+        }
+
+        let data = ImageData::RGBA(data.to_vec());
+        Some(Image { data, size })
     }
 
     /// Calculates an image rect depending on the provided view box.

@@ -110,8 +110,8 @@ fn box_blur_vert(
         let mut li = ti;
         let mut ri = ti + blur_radius * width;
 
-        let fv = RGBA8::default();
-        let lv = RGBA8::default();
+        let fv: RGBA8 = backbuf.data[ti];
+        let lv: RGBA8 = backbuf.data[ti + width * (height - 1)];
 
         let mut val_r = blur_radius_next * (fv.r as isize);
         let mut val_g = blur_radius_next * (fv.g as isize);
@@ -239,8 +239,8 @@ fn box_blur_horz(
         let mut li = ti;
         let mut ri = ti + blur_radius;
 
-        let fv = RGBA8::default();
-        let lv = RGBA8::default();
+        let fv = backbuf.data[ti];
+        let lv = backbuf.data[ti + width - 1];
 
         let mut val_r = blur_radius_next * (fv.r as isize);
         let mut val_g = blur_radius_next * (fv.g as isize);
