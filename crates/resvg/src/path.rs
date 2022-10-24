@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::paint_server::Paint;
 use crate::render::Context;
@@ -13,7 +13,7 @@ pub struct FillPath {
     pub paint: Paint,
     pub rule: tiny_skia::FillRule,
     pub anti_alias: bool,
-    pub path: Rc<tiny_skia::Path>,
+    pub path: Arc<tiny_skia::Path>,
 }
 
 pub struct StrokePath {
@@ -21,7 +21,7 @@ pub struct StrokePath {
     pub paint: Paint,
     pub stroke: tiny_skia::Stroke,
     pub anti_alias: bool,
-    pub path: Rc<tiny_skia::Path>,
+    pub path: Arc<tiny_skia::Path>,
 }
 
 pub fn convert(upath: &usvg::Path, children: &mut Vec<Node>) -> Option<BBoxes> {
@@ -94,7 +94,7 @@ pub fn convert(upath: &usvg::Path, children: &mut Vec<Node>) -> Option<BBoxes> {
 
 fn convert_fill_path(
     ufill: &usvg::Fill,
-    path: Rc<tiny_skia::Path>,
+    path: Arc<tiny_skia::Path>,
     transform: tiny_skia::Transform,
     text_bbox: Option<tiny_skia::NonZeroRect>,
     anti_alias: bool,
@@ -130,7 +130,7 @@ fn convert_fill_path(
 
 fn convert_stroke_path(
     ustroke: &usvg::Stroke,
-    path: Rc<tiny_skia::Path>,
+    path: Arc<tiny_skia::Path>,
     transform: tiny_skia::Transform,
     text_bbox: Option<tiny_skia::NonZeroRect>,
     anti_alias: bool,

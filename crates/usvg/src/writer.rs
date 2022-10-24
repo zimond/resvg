@@ -4,7 +4,7 @@
 
 use std::fmt::Display;
 use std::io::Write;
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::TreeWriting;
 use usvg_parser::{AId, EId};
@@ -83,7 +83,7 @@ pub(crate) fn convert(tree: &Tree, opt: &XmlOptions) -> String {
 fn conv_filters(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
     let mut filters = Vec::new();
     tree.filters(|filter| {
-        if !filters.iter().any(|other| Rc::ptr_eq(&filter, other)) {
+        if !filters.iter().any(|other| Arc::ptr_eq(&filter, other)) {
             filters.push(filter);
         }
     });
@@ -505,7 +505,7 @@ fn conv_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
 
     let mut clip_paths = Vec::new();
     tree.clip_paths(|clip| {
-        if !clip_paths.iter().any(|other| Rc::ptr_eq(&clip, other)) {
+        if !clip_paths.iter().any(|other| Arc::ptr_eq(&clip, other)) {
             clip_paths.push(clip);
         }
     });
@@ -526,7 +526,7 @@ fn conv_defs(tree: &Tree, opt: &XmlOptions, xml: &mut XmlWriter) {
 
     let mut masks = Vec::new();
     tree.masks(|mask| {
-        if !masks.iter().any(|other| Rc::ptr_eq(&mask, other)) {
+        if !masks.iter().any(|other| Arc::ptr_eq(&mask, other)) {
             masks.push(mask);
         }
     });
@@ -910,14 +910,17 @@ impl XmlWriterExt for XmlWriter {
     }
 
     fn write_image_data(&mut self, kind: &usvg_tree::ImageKind) {
-        let svg_string;
+        let mut buf = vec![];
         let (mime, data) = match kind {
             usvg_tree::ImageKind::JPEG(ref data) => ("jpeg", data.as_slice()),
             usvg_tree::ImageKind::PNG(ref data) => ("png", data.as_slice()),
             usvg_tree::ImageKind::GIF(ref data) => ("gif", data.as_slice()),
-            usvg_tree::ImageKind::SVG(ref tree) => {
-                svg_string = tree.to_string(&XmlOptions::default());
-                ("svg+xml", svg_string.as_bytes())
+            usvg_tree::ImageKind::SVG(ref tree) => ("svg+xml", tree.as_slice()),
+            usvg_tree::ImageKind::RAW(w, h, data) => {
+                buf.extend_from_slice(&w.to_be_bytes());
+                buf.extend_from_slice(&h.to_be_bytes());
+                buf.extend_from_slice(&data.as_slice());
+                ("raw", buf.as_slice())
             }
         };
 

@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use usvg::{fontdb, NodeExt, TreeParsing, TreeTextToPath};
 
@@ -61,13 +61,13 @@ fn main() {
     });
 
     for bbox in bboxes {
-        let mut path = usvg::Path::new(Rc::new(tiny_skia::PathBuilder::from_rect(bbox)));
+        let mut path = usvg::Path::new(Arc::new(tiny_skia::PathBuilder::from_rect(bbox)));
         path.stroke = stroke.clone();
         tree.root.append_kind(usvg::NodeKind::Path(path));
     }
 
     for bbox in text_bboxes {
-        let mut path = usvg::Path::new(Rc::new(tiny_skia::PathBuilder::from_rect(bbox)));
+        let mut path = usvg::Path::new(Arc::new(tiny_skia::PathBuilder::from_rect(bbox)));
         path.stroke = stroke2.clone();
         tree.root.append_kind(usvg::NodeKind::Path(path));
     }

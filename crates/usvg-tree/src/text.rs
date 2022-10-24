@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use strict_num::NonZeroPositiveF32;
 
@@ -244,7 +244,7 @@ pub struct TextPath {
     pub start_offset: f32,
 
     /// A path.
-    pub path: Rc<tiny_skia_path::Path>,
+    pub path: Arc<tiny_skia_path::Path>,
 }
 
 /// A text chunk flow property.
@@ -255,7 +255,7 @@ pub enum TextFlow {
     /// Includes left-to-right, right-to-left and top-to-bottom.
     Linear,
     /// A text-on-path layout.
-    Path(Rc<TextPath>),
+    Path(Arc<TextPath>),
 }
 
 /// A text chunk.

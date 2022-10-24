@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::render::Context;
 use crate::tree::{Node, OptionLog};
@@ -16,7 +16,7 @@ pub struct Mask {
     pub children: Vec<Node>,
 }
 
-pub fn convert(umask: Option<Rc<usvg::Mask>>, object_bbox: tiny_skia::Rect) -> Option<Mask> {
+pub fn convert(umask: Option<Arc<usvg::Mask>>, object_bbox: tiny_skia::Rect) -> Option<Mask> {
     let umask = umask?;
 
     let mut content_transform = tiny_skia::Transform::default();

@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::render::Context;
 use crate::tree::{Node, OptionLog};
@@ -14,7 +14,7 @@ pub struct ClipPath {
 }
 
 pub fn convert(
-    upath: Option<Rc<usvg::ClipPath>>,
+    upath: Option<Arc<usvg::ClipPath>>,
     object_bbox: tiny_skia::Rect,
 ) -> Option<ClipPath> {
     let upath = upath?;

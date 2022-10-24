@@ -22,7 +22,6 @@ pub mod filter;
 mod geom;
 mod text;
 
-use std::rc::Rc;
 use std::sync::Arc;
 
 pub use strict_num::{self, ApproxEqUlps, NonZeroPositiveF32, NormalizedF32, PositiveF32};
@@ -577,9 +576,9 @@ impl Color {
 #[derive(Clone, Debug)]
 pub enum Paint {
     Color(Color),
-    LinearGradient(Rc<LinearGradient>),
-    RadialGradient(Rc<RadialGradient>),
-    Pattern(Rc<Pattern>),
+    LinearGradient(Arc<LinearGradient>),
+    RadialGradient(Arc<RadialGradient>),
+    Pattern(Arc<Pattern>),
 }
 
 impl Paint {
@@ -602,9 +601,9 @@ impl PartialEq for Paint {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Color(lc), Self::Color(rc)) => lc == rc,
-            (Self::LinearGradient(ref lg1), Self::LinearGradient(ref lg2)) => Rc::ptr_eq(lg1, lg2),
-            (Self::RadialGradient(ref rg1), Self::RadialGradient(ref rg2)) => Rc::ptr_eq(rg1, rg2),
-            (Self::Pattern(ref p1), Self::Pattern(ref p2)) => Rc::ptr_eq(p1, p2),
+            (Self::LinearGradient(ref lg1), Self::LinearGradient(ref lg2)) => Arc::ptr_eq(lg1, lg2),
+            (Self::RadialGradient(ref rg1), Self::RadialGradient(ref rg2)) => Arc::ptr_eq(rg1, rg2),
+            (Self::Pattern(ref p1), Self::Pattern(ref p2)) => Arc::ptr_eq(p1, p2),
             _ => false,
         }
     }
@@ -634,7 +633,7 @@ pub struct ClipPath {
     /// Additional clip path.
     ///
     /// `clip-path` in SVG.
-    pub clip_path: Option<Rc<Self>>,
+    pub clip_path: Option<Arc<Self>>,
 
     /// Clip path children.
     ///
@@ -703,7 +702,7 @@ pub struct Mask {
     /// Additional mask.
     ///
     /// `mask` in SVG.
-    pub mask: Option<Rc<Self>>,
+    pub mask: Option<Arc<Self>>,
 
     /// Clip path children.
     ///
@@ -778,13 +777,13 @@ pub struct Group {
     pub isolate: bool,
 
     /// Element's clip path.
-    pub clip_path: Option<Rc<ClipPath>>,
+    pub clip_path: Option<Arc<ClipPath>>,
 
     /// Element's mask.
-    pub mask: Option<Rc<Mask>>,
+    pub mask: Option<Arc<Mask>>,
 
     /// Element's filters.
-    pub filters: Vec<Rc<filter::Filter>>,
+    pub filters: Vec<Arc<filter::Filter>>,
 }
 
 impl Default for Group {
@@ -883,12 +882,12 @@ pub struct Path {
     /// Segments list.
     ///
     /// All segments are in absolute coordinates.
-    pub data: Rc<tiny_skia_path::Path>,
+    pub data: Arc<tiny_skia_path::Path>,
 }
 
 impl Path {
     /// Creates a new `Path` with default values.
-    pub fn new(data: Rc<tiny_skia_path::Path>) -> Self {
+    pub fn new(data: Arc<tiny_skia_path::Path>) -> Self {
         Path {
             id: String::new(),
             transform: Transform::default(),
@@ -913,7 +912,9 @@ pub enum ImageKind {
     /// A reference to raw GIF data. Should be decoded by the caller.
     GIF(Arc<Vec<u8>>),
     /// A preprocessed SVG tree. Can be rendered as is.
-    SVG(Tree),
+    SVG(Arc<Vec<u8>>),
+    /// RAW image data
+    RAW(u32, u32, Arc<Vec<u8>>)
 }
 
 impl std::fmt::Debug for ImageKind {
@@ -923,6 +924,7 @@ impl std::fmt::Debug for ImageKind {
             ImageKind::PNG(_) => f.write_str("ImageKind::PNG(..)"),
             ImageKind::GIF(_) => f.write_str("ImageKind::GIF(..)"),
             ImageKind::SVG(_) => f.write_str("ImageKind::SVG(..)"),
+            ImageKind::RAW(_, _, _) => f.write_str("ImageKind::RAW(..)"),
         }
     }
 }
@@ -1017,21 +1019,21 @@ impl Tree {
     /// Calls a closure for each [`ClipPath`] in the tree.
     ///
     /// Doesn't guarantee to have unique clip paths. A caller must deduplicate them manually.
-    pub fn clip_paths<F: FnMut(Rc<ClipPath>)>(&self, mut f: F) {
+    pub fn clip_paths<F: FnMut(Arc<ClipPath>)>(&self, mut f: F) {
         loop_over_clip_paths(&self.root, &mut f)
     }
 
     /// Calls a closure for each [`Mask`] in the tree.
     ///
     /// Doesn't guarantee to have unique masks. A caller must deduplicate them manually.
-    pub fn masks<F: FnMut(Rc<Mask>)>(&self, mut f: F) {
+    pub fn masks<F: FnMut(Arc<Mask>)>(&self, mut f: F) {
         loop_over_masks(&self.root, &mut f)
     }
 
     /// Calls a closure for each [`Filter`](filter::Filter) in the tree.
     ///
     /// Doesn't guarantee to have unique filters. A caller must deduplicate them manually.
-    pub fn filters<F: FnMut(Rc<filter::Filter>)>(&self, mut f: F) {
+    pub fn filters<F: FnMut(Arc<filter::Filter>)>(&self, mut f: F) {
         loop_over_filters(&self.root, &mut f)
     }
 }
@@ -1096,7 +1098,7 @@ fn loop_over_paint_servers(root: &Node, f: &mut dyn FnMut(&Paint)) {
     }
 }
 
-fn loop_over_clip_paths(root: &Node, f: &mut dyn FnMut(Rc<ClipPath>)) {
+fn loop_over_clip_paths(root: &Node, f: &mut dyn FnMut(Arc<ClipPath>)) {
     for node in root.descendants() {
         if let NodeKind::Group(ref g) = *node.borrow() {
             if let Some(ref clip) = g.clip_path {
@@ -1112,7 +1114,7 @@ fn loop_over_clip_paths(root: &Node, f: &mut dyn FnMut(Rc<ClipPath>)) {
     }
 }
 
-fn loop_over_masks(root: &Node, f: &mut dyn FnMut(Rc<Mask>)) {
+fn loop_over_masks(root: &Node, f: &mut dyn FnMut(Arc<Mask>)) {
     for node in root.descendants() {
         if let NodeKind::Group(ref g) = *node.borrow() {
             if let Some(ref mask) = g.mask {
@@ -1128,7 +1130,7 @@ fn loop_over_masks(root: &Node, f: &mut dyn FnMut(Rc<Mask>)) {
     }
 }
 
-fn loop_over_filters(root: &Node, f: &mut dyn FnMut(Rc<filter::Filter>)) {
+fn loop_over_filters(root: &Node, f: &mut dyn FnMut(Arc<filter::Filter>)) {
     for node in root.descendants() {
         if let NodeKind::Group(ref g) = *node.borrow() {
             for filter in &g.filters {
