@@ -23,10 +23,9 @@ An [SVG] text layout implementation on top of [`usvg`] crate.
 
 pub use fontdb;
 
-use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::num::NonZeroU16;
-use std::rc::Rc;
+use std::{collections::HashMap, sync::Arc};
 
 use fontdb::{Database, ID};
 use kurbo::{ParamCurve, ParamCurveArclen, ParamCurveDeriv};
@@ -496,7 +495,7 @@ fn resolve_baseline(span: &TextSpan, font: &ResolvedFont, writing_mode: WritingM
     shift
 }
 
-type FontsCache = HashMap<Font, Rc<ResolvedFont>>;
+type FontsCache = HashMap<Font, Arc<ResolvedFont>>;
 
 fn text_to_paths(
     text_node: &Text,
@@ -508,7 +507,7 @@ fn text_to_paths(
         for span in &chunk.spans {
             if !fonts_cache.contains_key(&span.font) {
                 if let Some(font) = resolve_font(&span.font, fontdb) {
-                    fonts_cache.insert(span.font.clone(), Rc::new(font));
+                    fonts_cache.insert(span.font.clone(), Arc::new(font));
                 }
             }
         }
@@ -752,7 +751,7 @@ fn convert_span(
         paint_order: span.paint_order,
         rendering_mode: ShapeRendering::default(),
         text_bbox: bboxes_data.bbox().and_then(|r| r.to_rect()),
-        data: Rc::new(path_data),
+        data: Arc::new(path_data),
     };
 
     Some(path)
@@ -821,7 +820,7 @@ fn convert_decoration(
         visibility: span.visibility,
         fill: decoration.fill.take(),
         stroke: decoration.stroke.take(),
-        data: Rc::new(path),
+        data: Arc::new(path),
         ..Path::default()
     }
 }
@@ -864,7 +863,7 @@ fn paint_server_to_user_space_on_use(paint: Paint, bbox: PathBbox) -> Option<Pai
         Paint::LinearGradient(ref lg) => {
             let mut transform = lg.transform;
             transform.prepend(&ts);
-            Paint::LinearGradient(Rc::new(LinearGradient {
+            Paint::LinearGradient(Arc::new(LinearGradient {
                 id: String::new(),
                 x1: lg.x1,
                 y1: lg.y1,
@@ -881,7 +880,7 @@ fn paint_server_to_user_space_on_use(paint: Paint, bbox: PathBbox) -> Option<Pai
         Paint::RadialGradient(ref rg) => {
             let mut transform = rg.transform;
             transform.prepend(&ts);
-            Paint::RadialGradient(Rc::new(RadialGradient {
+            Paint::RadialGradient(Arc::new(RadialGradient {
                 id: String::new(),
                 cx: rg.cx,
                 cy: rg.cy,
@@ -899,7 +898,7 @@ fn paint_server_to_user_space_on_use(paint: Paint, bbox: PathBbox) -> Option<Pai
         Paint::Pattern(ref patt) => {
             let mut transform = patt.transform;
             transform.prepend(&ts);
-            Paint::Pattern(Rc::new(Pattern {
+            Paint::Pattern(Arc::new(Pattern {
                 id: String::new(),
                 units: Units::UserSpaceOnUse,
                 content_units: patt.content_units,
@@ -949,7 +948,7 @@ struct Glyph {
     /// Reference to the source font.
     ///
     /// Each glyph can have it's own source font.
-    font: Rc<ResolvedFont>,
+    font: Arc<ResolvedFont>,
 }
 
 impl Glyph {
@@ -1123,7 +1122,7 @@ fn outline_chunk(
 /// Text shaping with font fallback.
 fn shape_text(
     text: &str,
-    font: Rc<ResolvedFont>,
+    font: Arc<ResolvedFont>,
     small_caps: bool,
     apply_kerning: bool,
     fontdb: &fontdb::Database,
@@ -1146,7 +1145,7 @@ fn shape_text(
 
         if let Some(c) = missing {
             let fallback_font = match find_font_for_char(c, &used_fonts, fontdb) {
-                Some(v) => Rc::new(v),
+                Some(v) => Arc::new(v),
                 None => break 'outer,
             };
 
@@ -1210,7 +1209,7 @@ fn shape_text(
 /// This function will do the BIDI reordering and text shaping.
 fn shape_text_with_font(
     text: &str,
-    font: Rc<ResolvedFont>,
+    font: Arc<ResolvedFont>,
     small_caps: bool,
     apply_kerning: bool,
     fontdb: &fontdb::Database,

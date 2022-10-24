@@ -4,6 +4,7 @@
 
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
+use std::sync::Arc;
 
 use rosvgtree::{self, svgtypes, AttributeId as AId, ElementId as EId};
 use svgtypes::{Length, LengthUnit as Unit};
@@ -30,9 +31,9 @@ pub struct State<'a> {
 
 #[derive(Default)]
 pub struct Cache {
-    pub clip_paths: HashMap<String, Rc<ClipPath>>,
-    pub masks: HashMap<String, Rc<Mask>>,
-    pub filters: HashMap<String, Rc<filter::Filter>>,
+    pub clip_paths: HashMap<String, Arc<ClipPath>>,
+    pub masks: HashMap<String, Arc<Mask>>,
+    pub filters: HashMap<String, Arc<filter::Filter>>,
     pub paint: HashMap<String, Paint>,
 
     // used for ID generation
@@ -503,7 +504,7 @@ pub(crate) fn convert_group(
 fn resolve_filter_fill(
     node: rosvgtree::Node,
     state: &State,
-    filters: &[Rc<filter::Filter>],
+    filters: &[Arc<filter::Filter>],
     cache: &mut converter::Cache,
 ) -> Option<Paint> {
     let mut has_fill_paint = false;
@@ -529,7 +530,7 @@ fn resolve_filter_fill(
 fn resolve_filter_stroke(
     node: rosvgtree::Node,
     state: &State,
-    filters: &[Rc<filter::Filter>],
+    filters: &[Arc<filter::Filter>],
     cache: &mut converter::Cache,
 ) -> Option<Paint> {
     let mut has_stroke_paint = false;

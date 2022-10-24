@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use rosvgtree::{self, svgtypes, AttributeId as AId, ElementId as EId};
 use svgtypes::{Length, LengthUnit as Unit};
@@ -38,7 +38,7 @@ pub struct Mask {
     /// Additional mask.
     ///
     /// `mask` in SVG.
-    pub mask: Option<Rc<Self>>,
+    pub mask: Option<Arc<Self>>,
 
     /// Clip path children.
     ///
@@ -50,7 +50,7 @@ pub(crate) fn convert(
     node: rosvgtree::Node,
     state: &converter::State,
     cache: &mut converter::Cache,
-) -> Option<Rc<Mask>> {
+) -> Option<Arc<Mask>> {
     // A `mask` attribute must reference a `mask` element.
     if node.tag_name() != Some(EId::Mask) {
         return None;
@@ -100,7 +100,7 @@ pub(crate) fn convert(
     converter::convert_children(node, state, cache, &mut mask.root);
 
     if mask.root.has_children() {
-        let mask = Rc::new(mask);
+        let mask = Arc::new(mask);
         cache
             .masks
             .insert(node.element_id().to_string(), mask.clone());

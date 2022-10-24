@@ -422,6 +422,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "usvg-writer"
+version = "0.1.0"
+dependencies = [
+ "base64",
+ "rosvgtree",
+ "usvg",
+ "xmlwriter",
+]
+
+[[package]]
 name = "weezl"
 version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"

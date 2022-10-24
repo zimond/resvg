@@ -31,7 +31,9 @@ pub enum ImageKind {
     /// A reference to raw GIF data. Should be decoded by the caller.
     GIF(Arc<Vec<u8>>),
     /// A preprocessed SVG tree. Can be rendered as is.
-    SVG(crate::Tree),
+    SVG(Vec<u8>, Options),
+    /// RAW Image
+    RAW(u32, u32, Vec<u8>),
 }
 
 impl std::fmt::Debug for ImageKind {
@@ -40,22 +42,24 @@ impl std::fmt::Debug for ImageKind {
             ImageKind::JPEG(_) => f.write_str("ImageKind::JPEG(..)"),
             ImageKind::PNG(_) => f.write_str("ImageKind::PNG(..)"),
             ImageKind::GIF(_) => f.write_str("ImageKind::GIF(..)"),
-            ImageKind::SVG(_) => f.write_str("ImageKind::SVG(..)"),
+            ImageKind::SVG(_, _) => f.write_str("ImageKind::SVG(..)"),
+            ImageKind::RAW(_, _, _) => f.write_str("ImageKind::RAW(..)"),
         }
     }
 }
 
 /// A shorthand for [ImageHrefResolver]'s data function.
 pub type ImageHrefDataResolverFn =
-    Box<dyn Fn(&str, Arc<Vec<u8>>, &Options) -> Option<ImageKind> + Send + Sync>;
+    Arc<dyn Fn(&str, Arc<Vec<u8>>, &Options) -> Option<ImageKind> + Send + Sync>;
 /// A shorthand for [ImageHrefResolver]'s string function.
-pub type ImageHrefStringResolverFn = Box<dyn Fn(&str, &Options) -> Option<ImageKind> + Send + Sync>;
+pub type ImageHrefStringResolverFn = Arc<dyn Fn(&str, &Options) -> Option<ImageKind> + Send + Sync>;
 
 /// An `xlink:href` resolver for `<image>` elements.
 ///
 /// This type can be useful if you want to have an alternative `xlink:href` handling
 /// to the default one. For example, you can forbid access to local files (which is allowed by default)
 /// or add support for resolving actual URLs (usvg doesn't do any network requests).
+#[derive(Clone)]
 pub struct ImageHrefResolver {
     /// Resolver function that will be used when `xlink:href` contains a
     /// [Data URL](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URIs).
@@ -87,11 +91,22 @@ impl ImageHrefResolver {
     /// Note that it will simply match the `mime` or data's magic.
     /// The actual images would not be decoded. It's up to the renderer.
     pub fn default_data_resolver() -> ImageHrefDataResolverFn {
-        Box::new(
+        Arc::new(
             move |mime: &str, data: Arc<Vec<u8>>, opts: &Options| match mime {
                 "image/jpg" | "image/jpeg" => Some(ImageKind::JPEG(data)),
                 "image/png" => Some(ImageKind::PNG(data)),
                 "image/gif" => Some(ImageKind::GIF(data)),
+                "image/raw" => {
+                    use std::io::Read;
+                    let mut buf = data.as_slice();
+                    let mut width_vec = [0u8; 4];
+                    let mut height_vec = [0u8; 4];
+                    buf.read_exact(&mut width_vec).ok()?;
+                    buf.read_exact(&mut height_vec).ok()?;
+                    let width: u32 = u32::from_be_bytes(width_vec);
+                    let height: u32 = u32::from_be_bytes(height_vec);
+                    Some(ImageKind::RAW(width, height, buf.to_vec()))
+                }
                 "image/svg+xml" => load_sub_svg(&data, opts),
                 "text/plain" => match get_image_data_format(&data) {
                     Some(ImageFormat::JPEG) => Some(ImageKind::JPEG(data)),
@@ -112,7 +127,7 @@ impl ImageHrefResolver {
     /// Paths have to be absolute or relative to the input SVG file or relative to
     /// [Options::resources_dir](crate::Options::resources_dir).
     pub fn default_string_resolver() -> ImageHrefStringResolverFn {
-        Box::new(move |href: &str, opts: &Options| {
+        Arc::new(move |href: &str, opts: &Options| {
             let path = opts.get_abs_path(std::path::Path::new(href));
 
             if path.exists() {
@@ -204,7 +219,28 @@ pub(crate) fn convert(
                 .and_then(|size| Size::new(size.width as f64, size.height as f64))
                 .log_none(|| log::warn!("Image has an invalid size. Skipped."))?
         }
-        ImageKind::SVG(ref svg) => svg.size,
+        ImageKind::RAW(width, height, _) => Size::new(width as f64, height as f64)
+            .log_none(|| log::warn!("Image has an invalid size. Skipped."))?,
+        ImageKind::SVG(ref data, ref opt) => {
+            let mut sub_opt = Options::default();
+            sub_opt.resources_dir = None;
+            sub_opt.dpi = opt.dpi;
+            sub_opt.font_size = opt.font_size;
+            sub_opt.languages = opt.languages.clone();
+            sub_opt.shape_rendering = opt.shape_rendering;
+            sub_opt.text_rendering = opt.text_rendering;
+            sub_opt.image_rendering = opt.image_rendering;
+            sub_opt.default_size = opt.default_size;
+
+            let tree = match Tree::from_data(data, &sub_opt) {
+                Ok(tree) => tree,
+                Err(_) => {
+                    log::warn!("Failed to load subsvg image.");
+                    return None;
+                }
+            };
+            tree.size
+        }
     };
 
     let rect = Rect::new(
@@ -274,52 +310,25 @@ fn get_image_data_format(data: &[u8]) -> Option<ImageFormat> {
 /// Unlike `Tree::from_*` methods, this one will also remove all `image` elements
 /// from the loaded SVG, as required by the spec.
 pub(crate) fn load_sub_svg(data: &[u8], opt: &Options) -> Option<ImageKind> {
-    let mut sub_opt = Options::default();
-    sub_opt.resources_dir = None;
-    sub_opt.dpi = opt.dpi;
-    sub_opt.font_size = opt.font_size;
-    sub_opt.languages = opt.languages.clone();
-    sub_opt.shape_rendering = opt.shape_rendering;
-    sub_opt.text_rendering = opt.text_rendering;
-    sub_opt.image_rendering = opt.image_rendering;
-    sub_opt.default_size = opt.default_size;
+    // let mut sub_opt = Options::default();
+    // sub_opt.resources_dir = None;
+    // sub_opt.dpi = opt.dpi;
+    // sub_opt.font_size = opt.font_size;
+    // sub_opt.languages = opt.languages.clone();
+    // sub_opt.shape_rendering = opt.shape_rendering;
+    // sub_opt.text_rendering = opt.text_rendering;
+    // sub_opt.image_rendering = opt.image_rendering;
+    // sub_opt.keep_named_groups = false;
+    // sub_opt.default_size = opt.default_size;
 
-    let tree = match Tree::from_data(data, &sub_opt) {
-        Ok(tree) => tree,
-        Err(_) => {
-            log::warn!("Failed to load subsvg image.");
-            return None;
-        }
-    };
+    // let tree = match Tree::from_data(data, &sub_opt) {
+    //     Ok(tree) => tree,
+    //     Err(_) => {
+    //         log::warn!("Failed to load subsvg image.");
+    //         return None;
+    //     }
+    // };
 
-    sanitize_sub_svg(&tree);
-    Some(ImageKind::SVG(tree))
-}
-
-// TODO: technically can simply override Options::image_href_resolver?
-fn sanitize_sub_svg(tree: &crate::Tree) {
-    // Remove all Image nodes.
-    //
-    // The referenced SVG image cannot have any 'image' elements by itself.
-    // Not only recursive. Any. Don't know why.
-
-    // TODO: implement drain or something to the rctree.
-    let mut changed = true;
-    while changed {
-        changed = false;
-
-        for node in tree.root.descendants() {
-            let mut rm = false;
-            // TODO: feImage?
-            if let NodeKind::Image(_) = *node.borrow() {
-                rm = true;
-            };
-
-            if rm {
-                node.detach();
-                changed = true;
-                break;
-            }
-        }
-    }
+    // sanitize_sub_svg(&tree);
+    Some(ImageKind::SVG(data.to_vec(), opt.clone()))
 }

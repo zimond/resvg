@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use rosvgtree::{self, svgtypes, AttributeId as AId, ElementId as EId};
 use strict_num::PositiveF64;
@@ -243,7 +243,7 @@ fn convert_linear(node: rosvgtree::Node, state: &converter::State) -> Option<Ser
         },
     };
 
-    Some(ServerOrColor::Server(Paint::LinearGradient(Rc::new(
+    Some(ServerOrColor::Server(Paint::LinearGradient(Arc::new(
         gradient,
     ))))
 }
@@ -306,7 +306,7 @@ fn convert_radial(node: rosvgtree::Node, state: &converter::State) -> Option<Ser
         },
     };
 
-    Some(ServerOrColor::Server(Paint::RadialGradient(Rc::new(
+    Some(ServerOrColor::Server(Paint::RadialGradient(Arc::new(
         gradient,
     ))))
 }
@@ -364,7 +364,7 @@ fn convert_pattern(
         return None;
     }
 
-    Some(ServerOrColor::Server(Paint::Pattern(Rc::new(patt))))
+    Some(ServerOrColor::Server(Paint::Pattern(Arc::new(patt))))
 }
 
 fn convert_spread_method(node: rosvgtree::Node) -> SpreadMethod {

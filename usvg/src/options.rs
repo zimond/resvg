@@ -48,7 +48,7 @@ impl FitTo {
 }
 
 /// Processing options.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Options {
     /// Directory that will be used during relative paths resolving.
     ///

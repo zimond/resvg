@@ -47,7 +47,7 @@ and can focus just on the rendering part.
 */
 
 #![forbid(unsafe_code)]
-#![warn(missing_docs)]
+// #![warn(missing_docs)]
 #![warn(missing_debug_implementations)]
 #![warn(missing_copy_implementations)]
 #![allow(clippy::collapsible_else_if)]
@@ -106,10 +106,9 @@ mod units;
 mod use_node;
 pub mod utils;
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 pub use image::ImageHrefResolver;
-
 pub use rosvgtree::roxmltree;
 pub use rosvgtree::svgtypes::{Align, AspectRatio};
 pub use strict_num::{ApproxEq, ApproxEqUlps, NonZeroPositiveF64, NormalizedF64, PositiveF64};
@@ -470,7 +469,7 @@ pub struct Path {
     /// Segments list.
     ///
     /// All segments are in absolute coordinates.
-    pub data: Rc<PathData>,
+    pub data: std::sync::Arc<PathData>,
 }
 
 impl Default for Path {
@@ -484,7 +483,7 @@ impl Default for Path {
             paint_order: PaintOrder::default(),
             rendering_mode: ShapeRendering::default(),
             text_bbox: None,
-            data: Rc::new(PathData::default()),
+            data: std::sync::Arc::new(PathData::default()),
         }
     }
 }
@@ -531,13 +530,13 @@ pub struct Group {
     pub isolate: bool,
 
     /// Element's clip path.
-    pub clip_path: Option<Rc<ClipPath>>,
+    pub clip_path: Option<Arc<ClipPath>>,
 
     /// Element's mask.
-    pub mask: Option<Rc<Mask>>,
+    pub mask: Option<Arc<Mask>>,
 
     /// Element's filters.
-    pub filters: Vec<Rc<filter::Filter>>,
+    pub filters: Vec<Arc<filter::Filter>>,
 
     /// Contains a fill color or paint server used by `FilterInput::FillPaint`.
     ///
