@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use rosvgtree::{self, AttributeId as AId, ElementId as EId};
 use strict_num::NonZeroPositiveF64;
@@ -350,7 +350,7 @@ fn resolve_text_flow(node: rosvgtree::Node, state: &converter::State) -> Option<
         if let Some(node_transform) = linked_node.parse_attribute::<Transform>(AId::Transform) {
             let mut path_copy = path.as_ref().clone();
             path_copy.transform(node_transform);
-            Rc::new(path_copy)
+            Arc::new(path_copy)
         } else {
             path
         };
@@ -365,7 +365,7 @@ fn resolve_text_flow(node: rosvgtree::Node, state: &converter::State) -> Option<
         node.resolve_length(AId::StartOffset, state, 0.0)
     };
 
-    Some(TextFlow::Path(Rc::new(TextPath { start_offset, path })))
+    Some(TextFlow::Path(Arc::new(TextPath { start_offset, path })))
 }
 
 fn convert_font(node: rosvgtree::Node, state: &converter::State) -> Font {

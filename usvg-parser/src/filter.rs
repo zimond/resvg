@@ -5,8 +5,8 @@
 //! A collection of SVG filters.
 
 use std::collections::HashSet;
-use std::rc::Rc;
 use std::str::FromStr;
+use std::sync::Arc;
 
 use rosvgtree::{self, AttributeId as AId, ElementId as EId};
 use strict_num::PositiveF64;
@@ -32,7 +32,7 @@ pub(crate) fn convert(
     node: rosvgtree::Node,
     state: &converter::State,
     cache: &mut converter::Cache,
-) -> Result<Vec<Rc<Filter>>, ()> {
+) -> Result<Vec<Arc<Filter>>, ()> {
     let value = match node.attribute(AId::Filter) {
         Some(v) => v,
         None => return Ok(Vec::new()),
@@ -42,7 +42,7 @@ pub(crate) fn convert(
     let mut filters = Vec::new();
 
     let create_base_filter_func = |kind,
-                                   filters: &mut Vec<Rc<Filter>>,
+                                   filters: &mut Vec<Arc<Filter>>,
                                    cache: &mut converter::Cache| {
         // Filter functions, unlike `filter` elements, do not have a filter region.
         // We're currently do not support an unlimited region, so we simply use a fairly large one.
@@ -53,7 +53,7 @@ pub(crate) fn convert(
             _ => Rect::new(-0.1, -0.1, 1.2, 1.2).unwrap(),
         };
 
-        filters.push(Rc::new(Filter {
+        filters.push(Arc::new(Filter {
             id: cache.gen_filter_id(),
             units: Units::ObjectBoundingBox,
             primitive_units: Units::UserSpaceOnUse,
@@ -152,7 +152,7 @@ fn convert_url(
     node: rosvgtree::Node,
     state: &converter::State,
     cache: &mut converter::Cache,
-) -> Result<Option<Rc<Filter>>, ()> {
+) -> Result<Option<Arc<Filter>>, ()> {
     if let Some(filter) = cache.filters.get(node.element_id()) {
         return Ok(Some(filter.clone()));
     }
@@ -208,7 +208,7 @@ fn convert_url(
         return Err(());
     }
 
-    let filter = Rc::new(Filter {
+    let filter = Arc::new(Filter {
         id: node.element_id().to_string(),
         units,
         primitive_units,

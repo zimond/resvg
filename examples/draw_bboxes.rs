@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use usvg::{fontdb, NodeExt, TreeParsing, TreeTextToPath};
 
@@ -63,16 +63,16 @@ fn main() {
     for bbox in bboxes {
         tree.root.append_kind(usvg::NodeKind::Path(usvg::Path {
             stroke: stroke.clone(),
-            data: Rc::new(usvg::PathData::from_rect(bbox)),
-            ..usvg::Path::default()
+            data: Arc::new(usvg::PathData::from_rect(bbox)),
+            .. usvg::Path::default()
         }));
     }
 
     for bbox in text_bboxes {
         tree.root.append_kind(usvg::NodeKind::Path(usvg::Path {
             stroke: stroke2.clone(),
-            data: Rc::new(usvg::PathData::from_rect(bbox)),
-            ..usvg::Path::default()
+            data: Arc::new(usvg::PathData::from_rect(bbox)),
+            .. usvg::Path::default()
         }));
     }
 

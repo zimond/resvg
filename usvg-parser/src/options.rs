@@ -7,7 +7,7 @@ use usvg_tree::{ImageRendering, ShapeRendering, Size, TextRendering};
 use crate::ImageHrefResolver;
 
 /// Processing options.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Options {
     /// Directory that will be used during relative paths resolving.
     ///

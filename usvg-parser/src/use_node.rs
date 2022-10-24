@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use rosvgtree::{self, AttributeId as AId, ElementId as EId};
 use svgtypes::{Length, LengthUnit};
@@ -209,14 +209,14 @@ fn clip_element(
 
     clip_path.root.append_kind(NodeKind::Path(Path {
         fill: Some(usvg_tree::Fill::default()),
-        data: Rc::new(PathData::from_rect(clip_rect)),
+        data: Arc::new(PathData::from_rect(clip_rect)),
         ..Path::default()
     }));
 
     parent.append_kind(NodeKind::Group(Group {
         id: node.element_id().to_string(),
         transform,
-        clip_path: Some(Rc::new(clip_path)),
+        clip_path: Some(Arc::new(clip_path)),
         ..Group::default()
     }))
 }

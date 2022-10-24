@@ -2,6 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use usvg::{NodeKind, TreeParsing};
+
 use crate::{render::Canvas, ConvTransform};
 
 pub fn draw(image: &usvg::Image, canvas: &mut Canvas) -> usvg::PathBbox {
@@ -20,8 +22,18 @@ pub fn draw_kind(
     canvas: &mut Canvas,
 ) {
     match kind {
-        usvg::ImageKind::SVG(ref subtree) => {
-            draw_svg(subtree, view_box, canvas);
+        usvg::ImageKind::SVG(ref data) => {
+            let sub_opt = usvg::Options::default();
+
+            let tree = match usvg::Tree::from_data(data, &sub_opt) {
+                Ok(tree) => tree,
+                Err(_) => {
+                    log::warn!("Failed to load subsvg image.");
+                    return;
+                }
+            };
+            sanitize_sub_svg(&tree);
+            draw_svg(&tree, view_box, canvas);
         }
         #[cfg(feature = "raster-images")]
         usvg::ImageKind::JPEG(ref data) => match raster_images::read_jpeg(data) {
@@ -44,6 +56,15 @@ pub fn draw_kind(
             }
             None => log::warn!("Failed to decode a GIF image."),
         },
+        #[cfg(feature = "raster-images")]
+        usvg::ImageKind::RAW(width, height, ref data) => {
+            match raster_images::read_raw(width.to_owned(), height.to_owned(), data) {
+                Some(image) => {
+                    raster_images::draw_raster(&image, view_box, rendering_mode, canvas);
+                }
+                None => log::warn!("Failed to load an embedded raw image."),
+            }
+        }
         #[cfg(not(feature = "raster-images"))]
         _ => {
             log::warn!("Images decoding was disabled by a build feature.");
@@ -269,6 +290,17 @@ mod raster_images {
         })
     }
 
+    pub fn read_raw(width: u32, height: u32, data: &[u8]) -> Option<Image> {
+        let size = usvg::ScreenSize::new(width, height)?;
+
+        if width * height * 4 != data.len() as u32 {
+            return None;
+        }
+
+        let data = ImageData::RGBA(data.to_vec());
+        Some(Image { data, size })
+    }
+
     /// Calculates an image rect depending on the provided view box.
     fn image_rect(view_box: &usvg::ViewBox, img_size: usvg::ScreenSize) -> usvg::Rect {
         let new_size = img_size.to_size().fit_view_box(view_box);
@@ -281,5 +313,33 @@ mod raster_images {
         );
 
         new_size.to_rect(x, y)
+    }
+}
+
+// TODO: technically can simply override Options::image_href_resolver?
+fn sanitize_sub_svg(tree: &usvg::Tree) {
+    // Remove all Image nodes.
+    //
+    // The referenced SVG image cannot have any 'image' elements by itself.
+    // Not only recursive. Any. Don't know why.
+
+    // TODO: implement drain or something to the rctree.
+    let mut changed = true;
+    while changed {
+        changed = false;
+
+        for node in tree.root.descendants() {
+            let mut rm = false;
+            // TODO: feImage?
+            if let NodeKind::Image(_) = *node.borrow() {
+                rm = true;
+            };
+
+            if rm {
+                node.detach();
+                changed = true;
+                break;
+            }
+        }
     }
 }
