@@ -4,6 +4,7 @@
 
 use std::fmt::Display;
 use std::io::Write;
+use std::sync::Arc;
 
 use xmlwriter::XmlWriter;
 
@@ -31,11 +32,11 @@ pub(crate) fn convert(tree: &Tree, opt: &XmlOptions) -> String {
     xml.end_document()
 }
 
-fn collect_clip_paths(root: Node, clip_paths: &mut Vec<Rc<ClipPath>>) {
+fn collect_clip_paths(root: Node, clip_paths: &mut Vec<Arc<ClipPath>>) {
     for n in root.descendants() {
         if let NodeKind::Group(ref g) = *n.borrow() {
             if let Some(ref cp) = g.clip_path {
-                if !clip_paths.iter().any(|other| Rc::ptr_eq(cp, other)) {
+                if !clip_paths.iter().any(|other| Arc::ptr_eq(cp, other)) {
                     clip_paths.push(cp.clone());
                 }
 
@@ -49,11 +50,11 @@ fn collect_clip_paths(root: Node, clip_paths: &mut Vec<Rc<ClipPath>>) {
     }
 }
 
-fn collect_masks(root: Node, masks: &mut Vec<Rc<Mask>>) {
+fn collect_masks(root: Node, masks: &mut Vec<Arc<Mask>>) {
     for n in root.descendants() {
         if let NodeKind::Group(ref g) = *n.borrow() {
             if let Some(ref mask) = g.mask {
-                if !masks.iter().any(|other| Rc::ptr_eq(mask, other)) {
+                if !masks.iter().any(|other| Arc::ptr_eq(mask, other)) {
                     masks.push(mask.clone());
                 }
 
@@ -94,11 +95,11 @@ fn collect_paint_servers(root: Node, paint_servers: &mut Vec<Paint>) {
 }
 
 #[cfg(feature = "filter")]
-fn collect_filters(root: Node, filters: &mut Vec<Rc<filter::Filter>>) {
+fn collect_filters(root: Node, filters: &mut Vec<Arc<filter::Filter>>) {
     for n in root.descendants() {
         if let NodeKind::Group(ref g) = *n.borrow() {
             for filter in &g.filters {
-                if !filters.iter().any(|other| Rc::ptr_eq(other, &filter)) {
+                if !filters.iter().any(|other| Arc::ptr_eq(other, &filter)) {
                     filters.push(filter.clone());
                 }
             }
@@ -920,14 +921,19 @@ impl XmlWriterExt for XmlWriter {
     }
 
     fn write_image_data(&mut self, kind: &crate::ImageKind) {
-        let svg_string;
+        let mut buf = vec![];
         let (mime, data) = match kind {
             crate::ImageKind::JPEG(ref data) => ("jpg", data.as_slice()),
             crate::ImageKind::PNG(ref data) => ("png", data.as_slice()),
             crate::ImageKind::GIF(ref data) => ("gif", data.as_slice()),
             crate::ImageKind::SVG(ref tree) => {
-                svg_string = tree.to_string(&XmlOptions::default());
-                ("svg+xml", svg_string.as_bytes())
+                ("svg+xml", tree.as_slice())
+            }
+            crate::ImageKind::RAW(width, height, ref data) => {
+                buf.extend_from_slice(&width.to_be_bytes());
+                buf.extend_from_slice(&height.to_be_bytes());
+                buf.append(&mut data.clone());
+                ("raw", buf.as_slice())
             }
         };
 

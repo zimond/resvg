@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use svgtypes::Length;
 
@@ -84,7 +84,7 @@ fn convert_rect(node: svgtree::Node, state: &converter::State) -> Option<SharedP
         p
     };
 
-    Some(Rc::new(path))
+    Some(Arc::new(path))
 }
 
 fn resolve_rx_ry(node: svgtree::Node, state: &converter::State) -> (f64, f64) {
@@ -126,17 +126,17 @@ fn convert_line(node: svgtree::Node, state: &converter::State) -> Option<SharedP
     let mut path = PathData::new();
     path.push_move_to(x1, y1);
     path.push_line_to(x2, y2);
-    Some(Rc::new(path))
+    Some(Arc::new(path))
 }
 
 fn convert_polyline(node: svgtree::Node) -> Option<SharedPathData> {
-    points_to_path(node, "Polyline").map(Rc::new)
+    points_to_path(node, "Polyline").map(Arc::new)
 }
 
 fn convert_polygon(node: svgtree::Node) -> Option<SharedPathData> {
     if let Some(mut path) = points_to_path(node, "Polygon") {
         path.push_close_path();
-        Some(Rc::new(path))
+        Some(Arc::new(path))
     } else {
         None
     }
@@ -192,7 +192,7 @@ fn convert_circle(node: svgtree::Node, state: &converter::State) -> Option<Share
         return None;
     }
 
-    Some(Rc::new(ellipse_to_path(cx, cy, r, r)))
+    Some(Arc::new(ellipse_to_path(cx, cy, r, r)))
 }
 
 fn convert_ellipse(node: svgtree::Node, state: &converter::State) -> Option<SharedPathData> {
@@ -216,7 +216,7 @@ fn convert_ellipse(node: svgtree::Node, state: &converter::State) -> Option<Shar
         return None;
     }
 
-    Some(Rc::new(ellipse_to_path(cx, cy, rx, ry)))
+    Some(Arc::new(ellipse_to_path(cx, cy, rx, ry)))
 }
 
 fn ellipse_to_path(cx: f64, cy: f64, rx: f64, ry: f64) -> PathData {

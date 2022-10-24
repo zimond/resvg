@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::svgtree::{self, AId, EId};
 use crate::{converter, Group, Node, NodeKind, Transform, Units};
@@ -31,7 +31,7 @@ pub struct ClipPath {
     /// Additional clip path.
     ///
     /// `clip-path` in SVG.
-    pub clip_path: Option<Rc<Self>>,
+    pub clip_path: Option<Arc<Self>>,
 
     /// Clip path children.
     ///
@@ -55,7 +55,7 @@ pub(crate) fn convert(
     node: svgtree::Node,
     state: &converter::State,
     cache: &mut converter::Cache,
-) -> Option<Rc<ClipPath>> {
+) -> Option<Arc<ClipPath>> {
     // A `clip-path` attribute must reference a `clipPath` element.
     if !node.has_tag_name(EId::ClipPath) {
         return None;
@@ -98,7 +98,7 @@ pub(crate) fn convert(
     converter::ungroup_groups(clip.root.clone(), false);
 
     if clip.root.has_children() {
-        let clip = Rc::new(clip);
+        let clip = Arc::new(clip);
         cache
             .clip_paths
             .insert(node.element_id().to_string(), clip.clone());
