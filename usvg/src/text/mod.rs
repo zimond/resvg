@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 mod convert;
 mod fontdb_ext;
@@ -292,7 +292,7 @@ fn convert_span(
         paint_order: span.paint_order,
         rendering_mode: ShapeRendering::default(),
         text_bbox: bboxes_data.bbox().and_then(|r| r.to_rect()),
-        data: Rc::new(path_data),
+        data: Arc::new(path_data),
     };
 
     Some(path)
@@ -316,7 +316,7 @@ fn dump_cluster(cluster: &OutlinedCluster, text_ts: Transform, parent: &mut Node
     // Cluster bbox.
     let r = Rect::new(0.0, -cluster.ascent, cluster.advance, cluster.height()).unwrap();
     base_path.stroke = new_stroke(Color::new_rgb(0, 0, 255));
-    base_path.data = Rc::new(PathData::from_rect(r));
+    base_path.data = Arc::new(PathData::from_rect(r));
     parent.append_kind(NodeKind::Path(base_path.clone()));
 
     // Baseline.
@@ -326,7 +326,7 @@ fn dump_cluster(cluster: &OutlinedCluster, text_ts: Transform, parent: &mut Node
     path.push_move_to(0.0, 0.0);
     path.push_line_to(cluster.advance, 0.0);
 
-    base_path.data = Rc::new(path);
+    base_path.data = Arc::new(path);
     parent.append_kind(NodeKind::Path(base_path));
 }
 
@@ -392,7 +392,7 @@ fn convert_decoration(
         visibility: span.visibility,
         fill: decoration.fill.take(),
         stroke: decoration.stroke.take(),
-        data: Rc::new(path),
+        data: Arc::new(path),
         ..Path::default()
     }
 }
@@ -435,7 +435,7 @@ fn paint_server_to_user_space_on_use(paint: Paint, bbox: PathBbox) -> Option<Pai
         Paint::LinearGradient(ref lg) => {
             let mut transform = lg.transform;
             transform.prepend(&ts);
-            Paint::LinearGradient(Rc::new(LinearGradient {
+            Paint::LinearGradient(Arc::new(LinearGradient {
                 id: String::new(),
                 x1: lg.x1,
                 y1: lg.y1,
@@ -452,7 +452,7 @@ fn paint_server_to_user_space_on_use(paint: Paint, bbox: PathBbox) -> Option<Pai
         Paint::RadialGradient(ref rg) => {
             let mut transform = rg.transform;
             transform.prepend(&ts);
-            Paint::RadialGradient(Rc::new(RadialGradient {
+            Paint::RadialGradient(Arc::new(RadialGradient {
                 id: String::new(),
                 cx: rg.cx,
                 cy: rg.cy,
@@ -470,7 +470,7 @@ fn paint_server_to_user_space_on_use(paint: Paint, bbox: PathBbox) -> Option<Pai
         Paint::Pattern(ref patt) => {
             let mut transform = patt.transform;
             transform.prepend(&ts);
-            Paint::Pattern(Rc::new(Pattern {
+            Paint::Pattern(Arc::new(Pattern {
                 id: String::new(),
                 units: Units::UserSpaceOnUse,
                 content_units: patt.content_units,

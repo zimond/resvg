@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use kurbo::{ParamCurve, ParamCurveArclen, ParamCurveExtrema};
 
@@ -57,7 +57,7 @@ pub struct PathData {
 ///
 /// `PathData` is usually pretty big and it's expensive to clone it,
 /// so we are using `Rc`.
-pub(crate) type SharedPathData = Rc<PathData>;
+pub type SharedPathData = Arc<PathData>;
 
 impl PathData {
     /// Creates a new path.

@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use strict_num::NonZeroPositiveF64;
 use svgtypes::{Length, LengthUnit};
@@ -81,7 +81,7 @@ pub struct TextPath {
 #[derive(Clone)]
 pub enum TextFlow {
     Horizontal,
-    Path(Rc<TextPath>),
+    Path(Arc<TextPath>),
 }
 
 /// A text chunk.
@@ -339,7 +339,7 @@ fn resolve_text_flow(node: svgtree::Node, state: &converter::State) -> Option<Te
     let path = if let Some(node_transform) = linked_node.attribute::<Transform>(AId::Transform) {
         let mut path_copy = path.as_ref().clone();
         path_copy.transform(node_transform);
-        Rc::new(path_copy)
+        Arc::new(path_copy)
     } else {
         path
     };
@@ -354,7 +354,11 @@ fn resolve_text_flow(node: svgtree::Node, state: &converter::State) -> Option<Te
         node.resolve_length(AId::StartOffset, state, 0.0)
     };
 
-    Some(TextFlow::Path(Rc::new(TextPath { start_offset, path })))
+
+    Some(TextFlow::Path(Arc::new(TextPath {
+        start_offset,
+        path,
+    })))
 }
 
 pub fn resolve_rendering_mode(text_node: TextNode, state: &converter::State) -> ShapeRendering {

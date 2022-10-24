@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use strict_num::PositiveF64;
 use svgtypes::{Length, LengthUnit as Unit};
@@ -241,7 +241,7 @@ fn convert_linear(node: svgtree::Node, state: &converter::State) -> Option<Serve
         },
     };
 
-    Some(ServerOrColor::Server(Paint::LinearGradient(Rc::new(
+    Some(ServerOrColor::Server(Paint::LinearGradient(Arc::new(
         gradient,
     ))))
 }
@@ -305,7 +305,7 @@ fn convert_radial(node: svgtree::Node, state: &converter::State) -> Option<Serve
         },
     };
 
-    Some(ServerOrColor::Server(Paint::RadialGradient(Rc::new(
+    Some(ServerOrColor::Server(Paint::RadialGradient(Arc::new(
         gradient,
     ))))
 }
@@ -363,7 +363,7 @@ fn convert_pattern(
         return None;
     }
 
-    Some(ServerOrColor::Server(Paint::Pattern(Rc::new(patt))))
+    Some(ServerOrColor::Server(Paint::Pattern(Arc::new(patt))))
 }
 
 fn convert_spread_method(node: svgtree::Node) -> SpreadMethod {

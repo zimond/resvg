@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::svgtree::{self, AId};
 use crate::{
@@ -231,9 +231,9 @@ impl SvgColorExt for svgtypes::Color {
 #[derive(Clone, Debug)]
 pub enum Paint {
     Color(Color),
-    LinearGradient(Rc<LinearGradient>),
-    RadialGradient(Rc<RadialGradient>),
-    Pattern(Rc<Pattern>),
+    LinearGradient(Arc<LinearGradient>),
+    RadialGradient(Arc<RadialGradient>),
+    Pattern(Arc<Pattern>),
 }
 
 impl Paint {
@@ -256,9 +256,9 @@ impl PartialEq for Paint {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Color(lc), Self::Color(rc)) => lc == rc,
-            (Self::LinearGradient(ref lg1), Self::LinearGradient(ref lg2)) => Rc::ptr_eq(lg1, lg2),
-            (Self::RadialGradient(ref rg1), Self::RadialGradient(ref rg2)) => Rc::ptr_eq(rg1, rg2),
-            (Self::Pattern(ref p1), Self::Pattern(ref p2)) => Rc::ptr_eq(p1, p2),
+            (Self::LinearGradient(ref lg1), Self::LinearGradient(ref lg2)) => Arc::ptr_eq(lg1, lg2),
+            (Self::RadialGradient(ref rg1), Self::RadialGradient(ref rg2)) => Arc::ptr_eq(rg1, rg2),
+            (Self::Pattern(ref p1), Self::Pattern(ref p2)) => Arc::ptr_eq(p1, p2),
             _ => false,
         }
     }

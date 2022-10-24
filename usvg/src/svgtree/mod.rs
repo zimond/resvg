@@ -16,6 +16,7 @@ mod parse;
 mod text;
 
 pub use names::{AId, EId};
+pub use parse::parse_path;
 use strict_num::NonZeroPositiveF64;
 use svgtypes::Length;
 

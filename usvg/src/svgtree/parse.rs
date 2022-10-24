@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::sync::Arc;
 use std::str::FromStr;
 
 use super::{AId, Attribute, AttributeValue, Document, EId, Node, NodeData, NodeId, NodeKind};
@@ -472,7 +472,7 @@ fn parse_svg_attribute(tag_name: EId, aid: AId, value: &str) -> Option<Attribute
         AId::D => {
             let segments = parse_path(value);
             if segments.len() >= 2 {
-                AttributeValue::Path(Rc::new(segments))
+                AttributeValue::Path(Arc::new(segments))
             } else {
                 return None;
             }
@@ -552,7 +552,7 @@ fn parse_svg_attribute(tag_name: EId, aid: AId, value: &str) -> Option<Attribute
 }
 
 #[inline(never)]
-fn parse_path(text: &str) -> crate::PathData {
+pub fn parse_path(text: &str) -> crate::PathData {
     // Previous MoveTo coordinates.
     let mut prev_mx = 0.0;
     let mut prev_my = 0.0;

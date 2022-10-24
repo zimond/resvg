@@ -8,7 +8,7 @@ use svgtypes::Length;
 use crate::geom::{Rect, Transform, ViewBox};
 use crate::svgtree::{self, AId};
 use crate::{
-    converter, ImageRendering, Node, NodeExt, NodeKind, OptionLog, OptionsRef, Tree, Visibility,
+    converter, ImageRendering, Node, NodeExt, NodeKind, OptionLog, OptionsRef, Visibility,
 };
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -29,7 +29,9 @@ pub enum ImageKind {
     /// A reference to raw GIF data. Should be decoded by the caller.
     GIF(Arc<Vec<u8>>),
     /// A preprocessed SVG tree. Can be rendered as is.
-    SVG(crate::Tree),
+    SVG(Vec<u8>),
+    /// RAW Image
+    RAW(u32, u32, Vec<u8>),
 }
 
 impl std::fmt::Debug for ImageKind {
@@ -39,6 +41,7 @@ impl std::fmt::Debug for ImageKind {
             ImageKind::PNG(_) => f.write_str("ImageKind::PNG(..)"),
             ImageKind::GIF(_) => f.write_str("ImageKind::GIF(..)"),
             ImageKind::SVG(_) => f.write_str("ImageKind::SVG(..)"),
+            ImageKind::RAW(_, _, _) => f.write_str("ImageKind::RAW(..)"),
         }
     }
 }
@@ -91,6 +94,17 @@ impl ImageHrefResolver {
                 "image/jpg" | "image/jpeg" => Some(ImageKind::JPEG(data)),
                 "image/png" => Some(ImageKind::PNG(data)),
                 "image/gif" => Some(ImageKind::GIF(data)),
+                "image/raw" => {
+                    use std::io::Read;
+                    let mut buf = data.as_slice();
+                    let mut width_vec = [0u8; 4];
+                    let mut height_vec = [0u8; 4];
+                    buf.read_exact(&mut width_vec).ok()?;
+                    buf.read_exact(&mut height_vec).ok()?;
+                    let width: u32 = u32::from_be_bytes(width_vec);
+                    let height: u32 = u32::from_be_bytes(height_vec);
+                    Some(ImageKind::RAW(width, height, buf.to_vec()))
+                }
                 "image/svg+xml" => load_sub_svg(&data, opts),
                 "text/plain" => match get_image_data_format(&data) {
                     Some(ImageFormat::JPEG) => Some(ImageKind::JPEG(data)),
@@ -266,20 +280,20 @@ fn get_image_data_format(data: &[u8]) -> Option<ImageFormat> {
 /// Unlike `Tree::from_*` methods, this one will also remove all `image` elements
 /// from the loaded SVG, as required by the spec.
 pub(crate) fn load_sub_svg(data: &[u8], opt: &OptionsRef) -> Option<ImageKind> {
-    let mut sub_opt = opt.clone();
-    sub_opt.resources_dir = None;
-    sub_opt.keep_named_groups = false;
+    // let mut sub_opt = opt.clone();
+    // sub_opt.resources_dir = None;
+    // sub_opt.keep_named_groups = false;
 
-    let tree = match Tree::from_data(data, &sub_opt) {
-        Ok(tree) => tree,
-        Err(_) => {
-            log::warn!("Failed to load subsvg image.");
-            return None;
-        }
-    };
+    // let tree = match Tree::from_data(data, &sub_opt) {
+    //     Ok(tree) => tree,
+    //     Err(_) => {
+    //         log::warn!("Failed to load subsvg image.");
+    //         return None;
+    //     }
+    // };
 
-    sanitize_sub_svg(&tree);
-    Some(ImageKind::SVG(tree))
+    // sanitize_sub_svg(&tree);
+    Some(ImageKind::SVG(data.to_vec()))
 }
 
 fn sanitize_sub_svg(tree: &crate::Tree) {

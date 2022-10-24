@@ -133,7 +133,7 @@ pub use image::ImageHrefResolver;
 pub use strict_num::{ApproxEq, ApproxEqUlps, NonZeroPositiveF64, NormalizedF64, PositiveF64};
 pub use svgtypes::{Align, AspectRatio};
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 pub use roxmltree;
 
@@ -149,6 +149,7 @@ pub use crate::options::*;
 pub use crate::paint_server::*;
 pub use crate::pathdata::*;
 pub use crate::style::*;
+pub use crate::svgtree::{EnumFromStr, parse_path};
 
 trait OptionLog {
     fn log_none<F: FnOnce()>(self, f: F) -> Self;
@@ -419,7 +420,7 @@ pub struct Path {
     /// Segments list.
     ///
     /// All segments are in absolute coordinates.
-    pub data: Rc<PathData>,
+    pub data: std::sync::Arc<PathData>,
 }
 
 impl Default for Path {
@@ -433,7 +434,7 @@ impl Default for Path {
             paint_order: PaintOrder::default(),
             rendering_mode: ShapeRendering::default(),
             text_bbox: None,
-            data: Rc::new(PathData::default()),
+            data: std::sync::Arc::new(PathData::default()),
         }
     }
 }
@@ -470,14 +471,14 @@ pub struct Group {
     pub opacity: Opacity,
 
     /// Element's clip path.
-    pub clip_path: Option<Rc<ClipPath>>,
+    pub clip_path: Option<Arc<ClipPath>>,
 
     /// Element's mask.
-    pub mask: Option<Rc<Mask>>,
+    pub mask: Option<Arc<Mask>>,
 
     /// Element's filters.
     #[cfg(feature = "filter")]
-    pub filters: Vec<Rc<filter::Filter>>,
+    pub filters: Vec<Arc<filter::Filter>>,
 
     /// Contains a fill color or paint server used by `FilterInput::FillPaint`.
     ///
