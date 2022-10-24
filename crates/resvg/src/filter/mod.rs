@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use rgb::{FromSlice, RGBA8};
 use tiny_skia::IntRect;
@@ -99,7 +99,7 @@ pub struct Filter {
 }
 
 pub fn convert(
-    ufilters: &[Rc<usvg::filter::Filter>],
+    ufilters: &[Arc<usvg::filter::Filter>],
     object_bbox: Option<tiny_skia::Rect>,
 ) -> (Vec<Filter>, Option<tiny_skia::Rect>) {
     let object_bbox = object_bbox.and_then(|bbox| bbox.to_non_zero_rect());
@@ -389,7 +389,7 @@ struct Image {
     /// Filter primitive result.
     ///
     /// All images have the same size which is equal to the current filter region.
-    image: Rc<tiny_skia::Pixmap>,
+    image: Arc<tiny_skia::Pixmap>,
 
     /// Image's region that has actual data.
     ///
@@ -408,7 +408,7 @@ impl Image {
     fn from_image(image: tiny_skia::Pixmap, color_space: usvg::filter::ColorInterpolation) -> Self {
         let (w, h) = (image.width(), image.height());
         Image {
-            image: Rc::new(image),
+            image: Arc::new(image),
             region: IntRect::from_xywh(0, 0, w, h).unwrap(),
             color_space,
         }
@@ -429,7 +429,7 @@ impl Image {
             }
 
             Ok(Image {
-                image: Rc::new(image),
+                image: Arc::new(image),
                 region,
                 color_space,
             })
@@ -439,7 +439,7 @@ impl Image {
     }
 
     fn take(self) -> Result<tiny_skia::Pixmap, Error> {
-        match Rc::try_unwrap(self.image) {
+        match Arc::try_unwrap(self.image) {
             Ok(v) => Ok(v),
             Err(v) => Ok((*v).clone()),
         }
@@ -620,7 +620,7 @@ fn apply_inner(
             };
 
             result = Image {
-                image: Rc::new(pixmap),
+                image: Arc::new(pixmap),
                 region: subregion,
                 color_space,
             };
@@ -652,7 +652,7 @@ fn calc_region(
 }
 
 pub fn calc_filters_region(
-    filters: &[Rc<usvg::filter::Filter>],
+    filters: &[Arc<usvg::filter::Filter>],
     object_bbox: Option<tiny_skia::NonZeroRect>,
 ) -> Option<tiny_skia::NonZeroRect> {
     let mut global_region = usvg::BBox::default();
@@ -738,7 +738,7 @@ fn get_input(
             let image = source.clone();
 
             Ok(Image {
-                image: Rc::new(image),
+                image: Arc::new(image),
                 region,
                 color_space: usvg::filter::ColorInterpolation::SRGB,
             })
@@ -753,7 +753,7 @@ fn get_input(
             }
 
             Ok(Image {
-                image: Rc::new(image),
+                image: Arc::new(image),
                 region,
                 color_space: usvg::filter::ColorInterpolation::SRGB,
             })

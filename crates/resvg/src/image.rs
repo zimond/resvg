@@ -34,7 +34,7 @@ pub fn convert(image: &usvg::Image, children: &mut Vec<Node>) -> Option<BBoxes> 
     }
 
     let kind = match image.kind {
-        usvg::ImageKind::SVG(ref utree) => ImageKind::Vector(Tree::from_usvg(utree)),
+        usvg::ImageKind::SVG(_) => return None,
         #[cfg(feature = "raster-images")]
         _ => ImageKind::Raster(raster_images::decode_raster(image)?),
         #[cfg(not(feature = "raster-images"))]
@@ -105,6 +105,8 @@ fn render_vector(
 
 #[cfg(feature = "raster-images")]
 mod raster_images {
+    use usvg::fontdb::Database;
+
     use super::Image;
     use crate::render::TinySkiaPixmapMutExt;
     use crate::tree::OptionLog;
@@ -120,6 +122,9 @@ mod raster_images {
             }
             usvg::ImageKind::GIF(ref data) => {
                 decode_gif(data).log_none(|| log::warn!("Failed to decode a GIF image."))
+            }
+            usvg::ImageKind::RAW(w, h, ref data) => {
+                tiny_skia::Pixmap::from_vec((&**data).clone(), tiny_skia::IntSize::from_wh(w, h)?)
             }
         }
     }

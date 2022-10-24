@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use svgtypes::{Length, LengthUnit};
 use usvg_tree::{
@@ -206,7 +206,7 @@ fn clip_element(
 
     let clip_path = usvg_tree::ClipPath::default();
 
-    let mut path = Path::new(Rc::new(tiny_skia_path::PathBuilder::from_rect(
+    let mut path = Path::new(Arc::new(tiny_skia_path::PathBuilder::from_rect(
         clip_rect.to_rect(),
     )));
     path.fill = Some(usvg_tree::Fill::default());
@@ -222,7 +222,7 @@ fn clip_element(
     parent.append_kind(NodeKind::Group(Group {
         id,
         transform,
-        clip_path: Some(Rc::new(clip_path)),
+        clip_path: Some(Arc::new(clip_path)),
         ..Group::default()
     }))
 }

@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
+use std::sync::Arc;
 
 use strict_num::NonZeroPositiveF32;
 use svgtypes::Length;
@@ -121,14 +121,14 @@ fn resolve(
 
         let clip_path = ClipPath::default();
 
-        let mut path = Path::new(Rc::new(tiny_skia_path::PathBuilder::from_rect(
+        let mut path = Path::new(Arc::new(tiny_skia_path::PathBuilder::from_rect(
             clip_rect.to_rect(),
         )));
         path.fill = Some(usvg_tree::Fill::default());
 
         clip_path.root.append_kind(NodeKind::Path(path));
 
-        Some(Rc::new(clip_path))
+        Some(Arc::new(clip_path))
     } else {
         None
     };

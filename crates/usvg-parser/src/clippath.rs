@@ -2,8 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::rc::Rc;
 use std::str::FromStr;
+use std::sync::Arc;
 
 use usvg_tree::{ClipPath, Group, Node, NodeKind, Transform, Units};
 
@@ -14,7 +14,7 @@ pub(crate) fn convert(
     node: SvgNode,
     state: &converter::State,
     cache: &mut converter::Cache,
-) -> Option<Rc<ClipPath>> {
+) -> Option<Arc<ClipPath>> {
     // A `clip-path` attribute must reference a `clipPath` element.
     if node.tag_name() != Some(EId::ClipPath) {
         return None;
@@ -56,7 +56,7 @@ pub(crate) fn convert(
     converter::convert_clip_path_elements(node, &clip_state, cache, &mut clip.root);
 
     if clip.root.has_children() {
-        let clip = Rc::new(clip);
+        let clip = Arc::new(clip);
         cache
             .clip_paths
             .insert(node.element_id().to_string(), clip.clone());

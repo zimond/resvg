@@ -5,8 +5,8 @@
 //! A collection of SVG filters.
 
 use std::collections::HashSet;
-use std::rc::Rc;
 use std::str::FromStr;
+use std::sync::Arc;
 
 use strict_num::PositiveF32;
 use svgtypes::{Length, LengthUnit as Unit};
@@ -35,7 +35,7 @@ pub(crate) fn convert(
     node: SvgNode,
     state: &converter::State,
     cache: &mut converter::Cache,
-) -> Result<Vec<Rc<Filter>>, ()> {
+) -> Result<Vec<Arc<Filter>>, ()> {
     let value = match node.attribute::<&str>(AId::Filter) {
         Some(v) => v,
         None => return Ok(Vec::new()),
@@ -44,7 +44,7 @@ pub(crate) fn convert(
     let mut has_invalid_urls = false;
     let mut filters = Vec::new();
 
-    let create_base_filter_func = |kind, filters: &mut Vec<Rc<Filter>>| {
+    let create_base_filter_func = |kind, filters: &mut Vec<Arc<Filter>>| {
         // Filter functions, unlike `filter` elements, do not have a filter region.
         // We're currently do not support an unlimited region, so we simply use a fairly large one.
         // This if far from ideal, but good for now.
@@ -152,7 +152,7 @@ fn convert_url(
     node: SvgNode,
     state: &converter::State,
     cache: &mut converter::Cache,
-) -> Result<Option<Rc<Filter>>, ()> {
+) -> Result<Option<Arc<Filter>>, ()> {
     if let Some(filter) = cache.filters.get(node.element_id()) {
         return Ok(Some(filter.clone()));
     }
@@ -208,7 +208,7 @@ fn convert_url(
         return Err(());
     }
 
-    let filter = Rc::new(Filter {
+    let filter = Arc::new(Filter {
         id: node.element_id().to_string(),
         units,
         primitive_units,

@@ -3,8 +3,8 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use std::collections::HashMap;
-use std::rc::Rc;
 use std::str::FromStr;
+use std::sync::Arc;
 
 use svgtypes::{Length, LengthUnit as Unit, PaintOrderKind, TransformOrigin};
 use usvg_tree::*;
@@ -29,9 +29,9 @@ pub struct State<'a> {
 
 #[derive(Default)]
 pub struct Cache {
-    pub clip_paths: HashMap<String, Rc<ClipPath>>,
-    pub masks: HashMap<String, Rc<Mask>>,
-    pub filters: HashMap<String, Rc<usvg_tree::filter::Filter>>,
+    pub clip_paths: HashMap<String, Arc<ClipPath>>,
+    pub masks: HashMap<String, Arc<Mask>>,
+    pub filters: HashMap<String, Arc<usvg_tree::filter::Filter>>,
     pub paint: HashMap<String, Paint>,
 }
 
@@ -597,7 +597,7 @@ fn remove_empty_groups(tree: &mut Tree) {
 
 fn convert_path(
     node: SvgNode,
-    path: Rc<tiny_skia_path::Path>,
+    path: Arc<tiny_skia_path::Path>,
     state: &State,
     cache: &mut Cache,
     parent: &mut Node,

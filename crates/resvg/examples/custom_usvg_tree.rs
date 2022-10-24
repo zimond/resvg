@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 fn main() {
     let size = usvg::Size::from_wh(200.0, 200.0).unwrap();
@@ -37,11 +37,12 @@ fn main() {
     };
 
     let fill = Some(usvg::Fill {
-        paint: usvg::Paint::LinearGradient(Rc::new(gradient)),
+        paint: usvg::Paint::LinearGradient(Arc::new(gradient)),
         ..usvg::Fill::default()
     });
 
-    let mut path = usvg::Path::new(Rc::new(tiny_skia::PathBuilder::from_rect(
+
+    let mut path = usvg::Path::new(Arc::new(tiny_skia::PathBuilder::from_rect(
         tiny_skia::Rect::from_xywh(20.0, 20.0, 160.0, 160.0).unwrap(),
     )));
     path.fill = fill;
