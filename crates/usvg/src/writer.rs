@@ -138,22 +138,22 @@ impl WriterContext<'_> {
         id
     }
 
-    fn push_defs_id<T>(&mut self, node: &Rc<T>, id: String) {
-        let key = Rc::as_ptr(node) as usize;
+    fn push_defs_id<T>(&mut self, node: &Arc<T>, id: String) {
+        let key = Arc::as_ptr(node) as usize;
         if !self.id_map.contains_key(&key) {
             self.id_map.insert(key, id);
         }
     }
 
-    fn get_defs_id<T>(&self, node: &Rc<T>) -> Option<&str> {
-        let key = Rc::as_ptr(node) as usize;
+    fn get_defs_id<T>(&self, node: &Arc<T>) -> Option<&str> {
+        let key = Arc::as_ptr(node) as usize;
         debug_assert!(self.id_map.contains_key(&key));
         self.id_map.get(&key).map(|v| v.as_str())
     }
 
     fn prepare_defs_id<T, F: Fn(&mut WriterContext) -> String>(
         &mut self,
-        node: &Rc<T>,
+        node: &Arc<T>,
         id: &str,
         xml: &mut XmlWriter,
         f: F,

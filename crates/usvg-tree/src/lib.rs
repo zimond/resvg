@@ -893,7 +893,7 @@ pub enum ImageKind {
     /// A preprocessed SVG tree. Can be rendered as is.
     SVG(Arc<Vec<u8>>),
     /// RAW image data
-    RAW(u32, u32, Arc<Vec<u8>>)
+    RAW(u32, u32, Arc<Vec<u8>>),
 }
 
 impl std::fmt::Debug for ImageKind {
@@ -1034,9 +1034,10 @@ fn has_text_nodes(root: &Node) -> bool {
 
         if let NodeKind::Image(ref image) = *node.borrow() {
             if let ImageKind::SVG(ref tree) = image.kind {
-                if has_text_nodes(&tree.root) {
-                    has_text = true;
-                }
+                // if has_text_nodes(&tree.root) {
+                //     has_text = true;
+                // }
+                has_text = false;
             }
         }
 

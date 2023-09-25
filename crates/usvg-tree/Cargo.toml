@@ -13,6 +13,7 @@ readme = "README.md"
 workspace = "../.."
 
 [dependencies]
+kurbo = "0.9.5"
 rctree = "0.5"
 strict-num = "0.1.1"
 svgtypes = "0.13"

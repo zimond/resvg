@@ -56,7 +56,7 @@ pub(crate) fn convert(
             _ => NonZeroRect::from_xywh(-0.1, -0.1, 1.2, 1.2).unwrap(),
         };
 
-        filters.push(Rc::new(Filter {
+        filters.push(Arc::new(Filter {
             id: String::new(),
             units: Units::ObjectBoundingBox,
             primitive_units: Units::UserSpaceOnUse,
