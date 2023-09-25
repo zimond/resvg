@@ -38,7 +38,7 @@ mod units;
 mod use_node;
 
 pub use crate::options::*;
-pub use image::ImageHrefResolver;
+pub use image::{load_sub_svg, ImageHrefResolver};
 pub use roxmltree;
 pub use svgtree::{AId, EId};
 

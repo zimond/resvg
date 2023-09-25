@@ -914,7 +914,7 @@ pub enum ImageKind {
     /// A preprocessed SVG tree. Can be rendered as is.
     SVG(Arc<Vec<u8>>),
     /// RAW image data
-    RAW(u32, u32, Arc<Vec<u8>>)
+    RAW(u32, u32, Arc<Vec<u8>>),
 }
 
 impl std::fmt::Debug for ImageKind {

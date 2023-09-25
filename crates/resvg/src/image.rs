@@ -2,6 +2,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use usvg::load_sub_svg;
+
 use crate::render::TinySkiaPixmapMutExt;
 use crate::tree::{BBoxes, Node, Tree};
 
@@ -36,7 +38,9 @@ pub fn convert(image: &usvg::Image, children: &mut Vec<Node>) -> Option<BBoxes> 
     }
 
     let kind = match image.kind {
-        usvg::ImageKind::SVG(_) => return None,
+        usvg::ImageKind::SVG(ref data) => ImageKind::Vector(Tree::from_usvg(
+            &load_sub_svg(&data, &usvg::Options::default()).unwrap(),
+        )),
         #[cfg(feature = "raster-images")]
         _ => ImageKind::Raster(raster_images::decode_raster(image)?),
         #[cfg(not(feature = "raster-images"))]
@@ -108,8 +112,6 @@ fn render_vector(
 
 #[cfg(feature = "raster-images")]
 mod raster_images {
-    use usvg::fontdb::Database;
-
     use super::Image;
     use crate::render::TinySkiaPixmapMutExt;
     use crate::tree::OptionLog;

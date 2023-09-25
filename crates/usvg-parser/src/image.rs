@@ -69,12 +69,12 @@ impl ImageHrefResolver {
                     let height: u32 = u32::from_be_bytes(height_vec);
                     Some(ImageKind::RAW(width, height, Arc::new(buf.to_vec())))
                 }
-                "image/svg+xml" => load_sub_svg(&data, opts),
+                "image/svg+xml" => Some(ImageKind::SVG(Arc::new(data.to_vec()))),
                 "text/plain" => match get_image_data_format(&data) {
                     Some(ImageFormat::JPEG) => Some(ImageKind::JPEG(data)),
                     Some(ImageFormat::PNG) => Some(ImageKind::PNG(data)),
                     Some(ImageFormat::GIF) => Some(ImageKind::GIF(data)),
-                    _ => load_sub_svg(&data, opts),
+                    _ => Some(ImageKind::SVG(Arc::new(data.to_vec()))),
                 },
                 _ => None,
             },
@@ -105,7 +105,7 @@ impl ImageHrefResolver {
                     Some(ImageFormat::JPEG) => Some(ImageKind::JPEG(Arc::new(data))),
                     Some(ImageFormat::PNG) => Some(ImageKind::PNG(Arc::new(data))),
                     Some(ImageFormat::GIF) => Some(ImageKind::GIF(Arc::new(data))),
-                    Some(ImageFormat::SVG) => load_sub_svg(&data, opts),
+                    Some(ImageFormat::SVG) => Some(ImageKind::SVG(Arc::new(data))),
                     _ => {
                         log::warn!("'{}' is not a PNG, JPEG, GIF or SVG(Z) image.", href);
                         None
@@ -250,27 +250,27 @@ fn get_image_data_format(data: &[u8]) -> Option<ImageFormat> {
 ///
 /// Unlike `Tree::from_*` methods, this one will also remove all `image` elements
 /// from the loaded SVG, as required by the spec.
-pub(crate) fn load_sub_svg(data: &[u8], _: &Options) -> Option<ImageKind> {
-    // let mut sub_opt = Options::default();
-    // sub_opt.resources_dir = None;
-    // sub_opt.dpi = opt.dpi;
-    // sub_opt.font_size = opt.font_size;
-    // sub_opt.languages = opt.languages.clone();
-    // sub_opt.shape_rendering = opt.shape_rendering;
-    // sub_opt.text_rendering = opt.text_rendering;
-    // sub_opt.image_rendering = opt.image_rendering;
-    // sub_opt.default_size = opt.default_size;
+pub fn load_sub_svg(data: &[u8], opt: &Options) -> Option<Tree> {
+    let mut sub_opt = Options::default();
+    sub_opt.resources_dir = None;
+    sub_opt.dpi = opt.dpi;
+    sub_opt.font_size = opt.font_size;
+    sub_opt.languages = opt.languages.clone();
+    sub_opt.shape_rendering = opt.shape_rendering;
+    sub_opt.text_rendering = opt.text_rendering;
+    sub_opt.image_rendering = opt.image_rendering;
+    sub_opt.default_size = opt.default_size;
 
-    // let tree = match Tree::from_data(data, &sub_opt) {
-    //     Ok(tree) => tree,
-    //     Err(_) => {
-    //         log::warn!("Failed to load subsvg image.");
-    //         return None;
-    //     }
-    // };
+    let tree = match Tree::from_data(data, &sub_opt) {
+        Ok(tree) => tree,
+        Err(_) => {
+            log::warn!("Failed to load subsvg image.");
+            return None;
+        }
+    };
 
-    // sanitize_sub_svg(&tree);
-    Some(ImageKind::SVG(Arc::new(data.to_vec())))
+    sanitize_sub_svg(&tree);
+    Some(tree)
 }
 
 // TODO: technically can simply override Options::image_href_resolver?
