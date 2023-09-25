@@ -54,7 +54,7 @@ impl ImageHrefResolver {
     /// The actual images would not be decoded. It's up to the renderer.
     pub fn default_data_resolver() -> ImageHrefDataResolverFn {
         Arc::new(
-            move |mime: &str, data: Arc<Vec<u8>>, opts: &Options| match mime {
+            move |mime: &str, data: Arc<Vec<u8>>, _opts: &Options| match mime {
                 "image/jpg" | "image/jpeg" => Some(ImageKind::JPEG(data)),
                 "image/png" => Some(ImageKind::PNG(data)),
                 "image/gif" => Some(ImageKind::GIF(data)),

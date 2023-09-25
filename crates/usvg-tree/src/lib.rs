@@ -24,6 +24,7 @@ mod text;
 
 use std::sync::Arc;
 
+use kurbo::{CubicBez, Point};
 pub use strict_num::{self, ApproxEqUlps, NonZeroPositiveF32, NormalizedF32, PositiveF32};
 pub use svgtypes::{Align, AspectRatio};
 
@@ -1309,7 +1310,7 @@ impl NodeExt for Node {
 
 fn calc_node_bbox(node: &Node, ts: Transform) -> Option<BBox> {
     match *node.borrow() {
-        NodeKind::Path(ref path) => path.data.bounds().transform(ts).map(BBox::from),
+        NodeKind::Path(ref path) => bbox_with_transform(&path.data, ts, path.stroke.as_ref()),
         NodeKind::Image(ref img) => img.view_box.rect.transform(ts).map(BBox::from),
         NodeKind::Group(_) => {
             let mut bbox = BBox::default();
@@ -1330,4 +1331,135 @@ fn calc_node_bbox(node: &Node, ts: Transform) -> Option<BBox> {
         }
         NodeKind::Text(_) => None,
     }
+}
+
+fn bbox_with_transform(
+    path: &tiny_skia_path::Path,
+    ts: Transform,
+    stroke: Option<&Stroke>,
+) -> Option<BBox> {
+    use tiny_skia_path::PathSegment;
+
+    if path.segments().count() == 0 {
+        return None;
+    }
+
+    let mut prev_x = 0.0;
+    let mut prev_y = 0.0;
+    let mut minx = 0.0;
+    let mut miny = 0.0;
+    let mut maxx = 0.0;
+    let mut maxy = 0.0;
+
+    if let Some(PathSegment::MoveTo(p)) =
+        path.clone().transform(ts).and_then(|p| p.segments().next())
+    {
+        prev_x = p.x;
+        prev_y = p.y;
+        minx = p.x;
+        miny = p.y;
+        maxx = p.x;
+        maxy = p.y;
+    }
+
+    for seg in path
+        .clone()
+        .transform(ts)
+        .as_ref()
+        .map(|p| p.segments())
+        .into_iter()
+        .flatten()
+    {
+        match seg {
+            PathSegment::MoveTo(p) | PathSegment::LineTo(p) => {
+                let x = p.x;
+                let y = p.y;
+                prev_x = x;
+                prev_y = y;
+
+                if x > maxx {
+                    maxx = x;
+                } else if x < minx {
+                    minx = x;
+                }
+
+                if y > maxy {
+                    maxy = y;
+                } else if y < miny {
+                    miny = y;
+                }
+            }
+            PathSegment::CubicTo(p1, p2, p) => {
+                let curve = CubicBez::new(
+                    Point::new(prev_x as f64, prev_y as f64),
+                    Point::new(p1.x as f64, p1.y as f64),
+                    Point::new(p2.x as f64, p2.y as f64),
+                    Point::new(p.x as f64, p.y as f64),
+                );
+                let r = kurbo::ParamCurveExtrema::bounding_box(&curve);
+
+                if (r.x0 as f32) < minx {
+                    minx = r.x0 as f32;
+                }
+                if (r.x1 as f32) > maxx {
+                    maxx = r.x1 as f32;
+                }
+                if (r.y0 as f32) < miny {
+                    miny = r.y0 as f32;
+                }
+                if (r.y1 as f32) > maxy {
+                    maxy = r.y1 as f32;
+                }
+
+                prev_x = p.x;
+                prev_y = p.y;
+            }
+            PathSegment::QuadTo(p1, p) => {
+                let curve = CubicBez::new(
+                    Point::new(prev_x as f64, prev_y as f64),
+                    Point::new(p1.x as f64, p1.y as f64),
+                    Point::new(p1.x as f64, p1.y as f64),
+                    Point::new(p.x as f64, p.y as f64),
+                );
+                let r = kurbo::ParamCurveExtrema::bounding_box(&curve);
+
+                if (r.x0 as f32) < minx {
+                    minx = r.x0 as f32;
+                }
+                if (r.x1 as f32) > maxx {
+                    maxx = r.x1 as f32;
+                }
+                if (r.y0 as f32) < miny {
+                    miny = r.y0 as f32;
+                }
+                if (r.y1 as f32) > maxy {
+                    maxy = r.y1 as f32;
+                }
+
+                prev_x = p.x;
+                prev_y = p.y;
+            }
+            _ => {}
+        }
+    }
+
+    // TODO: find a better way
+    // It's an approximation, but it's better than nothing.
+    if let Some(stroke) = stroke {
+        let w = stroke.width.get()
+            / if ts.is_identity() {
+                2.0
+            } else {
+                2.0 / (ts.sx * ts.sy - ts.kx * ts.ky).abs().sqrt()
+            };
+        minx -= w;
+        miny -= w;
+        maxx += w;
+        maxy += w;
+    }
+
+    let width = maxx - minx;
+    let height = maxy - miny;
+
+    Some(BBox::from(Rect::from_xywh(minx, miny, width, height)?))
 }
