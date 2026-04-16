@@ -5,6 +5,8 @@
 
 `usvg` (micro SVG) is an [SVG] parser that tries to solve most of SVG complexity.
 
+**This is a fork of the original resvg with all usvg structs' fields exposed as public**
+
 SVG is notoriously hard to parse. `usvg` presents a layer between an XML library and
 a potential SVG rendering library. It will parse an input SVG into a strongly-typed tree structure
 were all the elements, attributes, references and other SVG features are already resolved

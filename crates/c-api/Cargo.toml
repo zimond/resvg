@@ -14,7 +14,7 @@ crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 log = "0.4"
-resvg = { path = "../resvg", default-features = false }
+resvg = { package = "resvg_exposed", path = "../resvg", default-features = false }
 
 [features]
 default = ["text", "system-fonts", "memmap-fonts", "raster-images"]
@@ -32,4 +32,4 @@ capi = []
 generation = false
 
 [package.metadata.capi.install.include]
-asset = [{ from="resvg.h" }]
+asset = [{ from = "resvg.h" }]

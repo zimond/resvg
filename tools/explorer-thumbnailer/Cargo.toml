@@ -11,10 +11,15 @@ license = "Apache-2.0 OR MIT"
 
 [dependencies]
 com = "0.2"
-winapi = { version = "0.3.9", features = ["impl-default", "objidlbase", "windef", "wingdi"] }
+winapi = { version = "0.3.9", features = [
+    "impl-default",
+    "objidlbase",
+    "windef",
+    "wingdi",
+] }
 log = "0.4"
 winlog = "0.2"
-resvg = { path = "../../crates/resvg" }
+resvg = { package = "resvg_exposed", path = "../../crates/resvg" }
 
 [lib]
 # name can only be "server.dll", see https://github.com/microsoft/com-rs/issues/157

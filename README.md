@@ -6,6 +6,8 @@
 
 *resvg* is an [SVG](https://en.wikipedia.org/wiki/Scalable_Vector_Graphics) rendering library.
 
+**This is a fork of the original resvg with all usvg structs' fields exposed as public**
+
 It can be used as a Rust library, as a C library, and as a CLI application to render static SVG files.
 
 The core idea is to make a fast, small, portable SVG library with the goal to support the whole SVG spec.
