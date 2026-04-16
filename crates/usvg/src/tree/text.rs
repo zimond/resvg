@@ -1,6 +1,8 @@
 // Copyright 2018 the Resvg Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(missing_docs)]
+
 use std::sync::Arc;
 
 use strict_num::NonZeroPositiveF32;
@@ -142,11 +144,11 @@ impl From<FontStyle> for fontdb::Style {
 /// Text font properties.
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub struct Font {
-    pub(crate) families: Vec<FontFamily>,
-    pub(crate) style: FontStyle,
-    pub(crate) stretch: FontStretch,
-    pub(crate) weight: u16,
-    pub(crate) variations: Vec<FontVariation>,
+    pub families: Vec<FontFamily>,
+    pub style: FontStyle,
+    pub stretch: FontStretch,
+    pub weight: u16,
+    pub variations: Vec<FontVariation>,
 }
 
 impl Font {
@@ -283,8 +285,8 @@ impl Default for FontOpticalSizing {
 /// Also, in SVG you can specify text decoration stroking.
 #[derive(Clone, Debug)]
 pub struct TextDecorationStyle {
-    pub(crate) fill: Option<Fill>,
-    pub(crate) stroke: Option<Stroke>,
+    pub fill: Option<Fill>,
+    pub stroke: Option<Stroke>,
 }
 
 impl TextDecorationStyle {
@@ -302,9 +304,9 @@ impl TextDecorationStyle {
 /// A text span decoration.
 #[derive(Clone, Debug)]
 pub struct TextDecoration {
-    pub(crate) underline: Option<TextDecorationStyle>,
-    pub(crate) overline: Option<TextDecorationStyle>,
-    pub(crate) line_through: Option<TextDecorationStyle>,
+    pub underline: Option<TextDecorationStyle>,
+    pub overline: Option<TextDecorationStyle>,
+    pub line_through: Option<TextDecorationStyle>,
 }
 
 impl TextDecoration {
@@ -329,25 +331,25 @@ impl TextDecoration {
 /// Spans do not overlap inside a text chunk.
 #[derive(Clone, Debug)]
 pub struct TextSpan {
-    pub(crate) start: usize,
-    pub(crate) end: usize,
-    pub(crate) fill: Option<Fill>,
-    pub(crate) stroke: Option<Stroke>,
-    pub(crate) paint_order: PaintOrder,
-    pub(crate) font: Font,
-    pub(crate) font_size: NonZeroPositiveF32,
-    pub(crate) small_caps: bool,
-    pub(crate) apply_kerning: bool,
-    pub(crate) font_optical_sizing: FontOpticalSizing,
-    pub(crate) decoration: TextDecoration,
-    pub(crate) dominant_baseline: DominantBaseline,
-    pub(crate) alignment_baseline: AlignmentBaseline,
-    pub(crate) baseline_shift: Vec<BaselineShift>,
-    pub(crate) visible: bool,
-    pub(crate) letter_spacing: f32,
-    pub(crate) word_spacing: f32,
-    pub(crate) text_length: Option<f32>,
-    pub(crate) length_adjust: LengthAdjust,
+    pub start: usize,
+    pub end: usize,
+    pub fill: Option<Fill>,
+    pub stroke: Option<Stroke>,
+    pub paint_order: PaintOrder,
+    pub font: Font,
+    pub font_size: NonZeroPositiveF32,
+    pub small_caps: bool,
+    pub apply_kerning: bool,
+    pub font_optical_sizing: FontOpticalSizing,
+    pub decoration: TextDecoration,
+    pub dominant_baseline: DominantBaseline,
+    pub alignment_baseline: AlignmentBaseline,
+    pub baseline_shift: Vec<BaselineShift>,
+    pub visible: bool,
+    pub letter_spacing: f32,
+    pub word_spacing: f32,
+    pub text_length: Option<f32>,
+    pub length_adjust: LengthAdjust,
 }
 
 impl TextSpan {
@@ -479,9 +481,9 @@ impl Default for TextAnchor {
 /// A path used by text-on-path.
 #[derive(Debug)]
 pub struct TextPath {
-    pub(crate) id: NonEmptyString,
-    pub(crate) start_offset: f32,
-    pub(crate) path: Arc<tiny_skia_path::Path>,
+    pub id: NonEmptyString,
+    pub start_offset: f32,
+    pub path: Arc<tiny_skia_path::Path>,
 }
 
 impl TextPath {
@@ -521,12 +523,12 @@ pub enum TextFlow {
 /// Text alignment and BIDI reordering can only be done inside a text chunk.
 #[derive(Clone, Debug)]
 pub struct TextChunk {
-    pub(crate) x: Option<f32>,
-    pub(crate) y: Option<f32>,
-    pub(crate) anchor: TextAnchor,
-    pub(crate) spans: Vec<TextSpan>,
-    pub(crate) text_flow: TextFlow,
-    pub(crate) text: String,
+    pub x: Option<f32>,
+    pub y: Option<f32>,
+    pub anchor: TextAnchor,
+    pub spans: Vec<TextSpan>,
+    pub text_flow: TextFlow,
+    pub text: String,
 }
 
 impl TextChunk {
@@ -574,21 +576,21 @@ pub enum WritingMode {
 /// `text` element in SVG.
 #[derive(Clone, Debug)]
 pub struct Text {
-    pub(crate) id: String,
-    pub(crate) rendering_mode: TextRendering,
-    pub(crate) dx: Vec<f32>,
-    pub(crate) dy: Vec<f32>,
-    pub(crate) rotate: Vec<f32>,
-    pub(crate) writing_mode: WritingMode,
-    pub(crate) chunks: Vec<TextChunk>,
-    pub(crate) abs_transform: Transform,
-    pub(crate) bounding_box: Rect,
-    pub(crate) abs_bounding_box: Rect,
-    pub(crate) stroke_bounding_box: Rect,
-    pub(crate) abs_stroke_bounding_box: Rect,
-    pub(crate) flattened: Box<Group>,
+    pub id: String,
+    pub rendering_mode: TextRendering,
+    pub dx: Vec<f32>,
+    pub dy: Vec<f32>,
+    pub rotate: Vec<f32>,
+    pub writing_mode: WritingMode,
+    pub chunks: Vec<TextChunk>,
+    pub abs_transform: Transform,
+    pub bounding_box: Rect,
+    pub abs_bounding_box: Rect,
+    pub stroke_bounding_box: Rect,
+    pub abs_stroke_bounding_box: Rect,
+    pub flattened: Box<Group>,
     #[cfg(feature = "text")]
-    pub(crate) layouted: Vec<Span>,
+    pub layouted: Vec<Span>,
 }
 
 impl Text {

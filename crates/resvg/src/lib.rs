@@ -23,7 +23,7 @@ mod geom;
 mod image;
 mod mask;
 mod path;
-mod render;
+pub mod render;
 
 /// Renders a tree onto the pixmap.
 ///

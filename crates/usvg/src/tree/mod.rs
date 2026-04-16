@@ -21,11 +21,13 @@ use crate::OptionLog;
 pub type Opacity = NormalizedF32;
 
 // Must not be clone-able to preserve ID uniqueness.
+#[allow(missing_docs)]
 #[derive(Debug)]
-pub(crate) struct NonEmptyString(String);
+pub struct NonEmptyString(String);
 
+#[allow(missing_docs)]
 impl NonEmptyString {
-    pub(crate) fn new(string: String) -> Option<Self> {
+    pub fn new(string: String) -> Option<Self> {
         if string.trim().is_empty() {
             return None;
         }
@@ -33,11 +35,11 @@ impl NonEmptyString {
         Some(NonEmptyString(string))
     }
 
-    pub(crate) fn get(&self) -> &str {
+    pub fn get(&self) -> &str {
         &self.0
     }
 
-    pub(crate) fn take(self) -> String {
+    pub fn take(self) -> String {
         self.0
     }
 }
@@ -66,8 +68,9 @@ impl NonZeroF32 {
     }
 }
 
+#[allow(missing_docs)]
 #[derive(Clone, Copy, PartialEq, Debug)]
-pub(crate) enum Units {
+pub enum Units {
     UserSpaceOnUse,
     ObjectBoundingBox,
 }
@@ -271,13 +274,14 @@ impl Default for SpreadMethod {
 }
 
 /// A generic gradient.
+#[allow(missing_docs)]
 #[derive(Debug)]
 pub struct BaseGradient {
-    pub(crate) id: NonEmptyString,
-    pub(crate) units: Units, // used only during parsing
-    pub(crate) transform: Transform,
-    pub(crate) spread_method: SpreadMethod,
-    pub(crate) stops: Vec<Stop>,
+    pub id: NonEmptyString,
+    pub units: Units, // used only during parsing
+    pub transform: Transform,
+    pub spread_method: SpreadMethod,
+    pub stops: Vec<Stop>,
 }
 
 impl BaseGradient {
@@ -312,13 +316,14 @@ impl BaseGradient {
 /// A linear gradient.
 ///
 /// `linearGradient` element in SVG.
+#[allow(missing_docs)]
 #[derive(Debug)]
 pub struct LinearGradient {
-    pub(crate) base: BaseGradient,
-    pub(crate) x1: f32,
-    pub(crate) y1: f32,
-    pub(crate) x2: f32,
-    pub(crate) y2: f32,
+    pub base: BaseGradient,
+    pub x1: f32,
+    pub y1: f32,
+    pub x2: f32,
+    pub y2: f32,
 }
 
 impl LinearGradient {
@@ -354,15 +359,16 @@ impl std::ops::Deref for LinearGradient {
 /// A radial gradient.
 ///
 /// `radialGradient` element in SVG.
+#[allow(missing_docs)]
 #[derive(Debug)]
 pub struct RadialGradient {
-    pub(crate) base: BaseGradient,
-    pub(crate) cx: f32,
-    pub(crate) cy: f32,
-    pub(crate) r: PositiveF32,
-    pub(crate) fx: f32,
-    pub(crate) fy: f32,
-    pub(crate) fr: PositiveF32,
+    pub base: BaseGradient,
+    pub cx: f32,
+    pub cy: f32,
+    pub r: PositiveF32,
+    pub fx: f32,
+    pub fy: f32,
+    pub fr: PositiveF32,
 }
 
 impl RadialGradient {
@@ -411,11 +417,12 @@ pub type StopOffset = NormalizedF32;
 /// Gradient's stop element.
 ///
 /// `stop` element in SVG.
+#[allow(missing_docs)]
 #[derive(Clone, Copy, Debug)]
 pub struct Stop {
-    pub(crate) offset: StopOffset,
-    pub(crate) color: Color,
-    pub(crate) opacity: Opacity,
+    pub offset: StopOffset,
+    pub color: Color,
+    pub opacity: Opacity,
 }
 
 impl Stop {
@@ -444,15 +451,16 @@ impl Stop {
 /// A pattern element.
 ///
 /// `pattern` element in SVG.
+#[allow(missing_docs)]
 #[derive(Debug)]
 pub struct Pattern {
-    pub(crate) id: NonEmptyString,
-    pub(crate) units: Units,         // used only during parsing
-    pub(crate) content_units: Units, // used only during parsing
-    pub(crate) transform: Transform,
-    pub(crate) rect: NonZeroRect,
-    pub(crate) view_box: Option<ViewBox>,
-    pub(crate) root: Group,
+    pub id: NonEmptyString,
+    pub units: Units,         // used only during parsing
+    pub content_units: Units, // used only during parsing
+    pub transform: Transform,
+    pub rect: NonZeroRect,
+    pub view_box: Option<ViewBox>,
+    pub root: Group,
 }
 
 impl Pattern {
@@ -569,19 +577,20 @@ impl Default for LineJoin {
 }
 
 /// A stroke style.
+#[allow(missing_docs)]
 #[derive(Clone, Debug)]
 pub struct Stroke {
-    pub(crate) paint: Paint,
-    pub(crate) dasharray: Option<Vec<f32>>,
-    pub(crate) dashoffset: f32,
-    pub(crate) miterlimit: StrokeMiterlimit,
-    pub(crate) opacity: Opacity,
-    pub(crate) width: StrokeWidth,
-    pub(crate) linecap: LineCap,
-    pub(crate) linejoin: LineJoin,
+    pub paint: Paint,
+    pub dasharray: Option<Vec<f32>>,
+    pub dashoffset: f32,
+    pub miterlimit: StrokeMiterlimit,
+    pub opacity: Opacity,
+    pub width: StrokeWidth,
+    pub linecap: LineCap,
+    pub linejoin: LineJoin,
     // Whether the current stroke needs to be resolved relative
     // to a context element.
-    pub(crate) context_element: Option<ContextElement>,
+    pub context_element: Option<ContextElement>,
 }
 
 impl Stroke {
@@ -670,8 +679,9 @@ impl Default for FillRule {
     }
 }
 
+#[allow(missing_docs)]
 #[derive(Clone, Copy, Debug)]
-pub(crate) enum ContextElement {
+pub enum ContextElement {
     /// The current context element is a use node. Since we can get
     /// the bounding box of a use node only once we have converted
     /// all elements, we need to fix the transform and units of
@@ -685,14 +695,15 @@ pub(crate) enum ContextElement {
 }
 
 /// A fill style.
+#[allow(missing_docs)]
 #[derive(Clone, Debug)]
 pub struct Fill {
-    pub(crate) paint: Paint,
-    pub(crate) opacity: Opacity,
-    pub(crate) rule: FillRule,
+    pub paint: Paint,
+    pub opacity: Opacity,
+    pub rule: FillRule,
     // Whether the current fill needs to be resolved relative
     // to a context element.
-    pub(crate) context_element: Option<ContextElement>,
+    pub context_element: Option<ContextElement>,
 }
 
 impl Fill {
@@ -780,12 +791,13 @@ impl PartialEq for Paint {
 /// A clip-path element.
 ///
 /// `clipPath` element in SVG.
+#[allow(missing_docs)]
 #[derive(Debug)]
 pub struct ClipPath {
-    pub(crate) id: NonEmptyString,
-    pub(crate) transform: Transform,
-    pub(crate) clip_path: Option<Arc<ClipPath>>,
-    pub(crate) root: Group,
+    pub id: NonEmptyString,
+    pub transform: Transform,
+    pub clip_path: Option<Arc<ClipPath>>,
+    pub root: Group,
 }
 
 impl ClipPath {
@@ -844,13 +856,14 @@ impl Default for MaskType {
 /// A mask element.
 ///
 /// `mask` element in SVG.
+#[allow(missing_docs)]
 #[derive(Debug)]
 pub struct Mask {
-    pub(crate) id: NonEmptyString,
-    pub(crate) rect: NonZeroRect,
-    pub(crate) kind: MaskType,
-    pub(crate) mask: Option<Arc<Mask>>,
-    pub(crate) root: Group,
+    pub id: NonEmptyString,
+    pub rect: NonZeroRect,
+    pub kind: MaskType,
+    pub mask: Option<Arc<Mask>>,
+    pub root: Group,
 }
 
 impl Mask {
@@ -1022,30 +1035,31 @@ impl Node {
 /// Those that left is just an indicator that a new canvas should be created.
 ///
 /// `g` element in SVG.
+#[allow(missing_docs)]
 #[derive(Clone, Debug)]
 pub struct Group {
-    pub(crate) id: String,
-    pub(crate) transform: Transform,
-    pub(crate) abs_transform: Transform,
-    pub(crate) opacity: Opacity,
-    pub(crate) blend_mode: BlendMode,
-    pub(crate) isolate: bool,
-    pub(crate) clip_path: Option<Arc<ClipPath>>,
+    pub id: String,
+    pub transform: Transform,
+    pub abs_transform: Transform,
+    pub opacity: Opacity,
+    pub blend_mode: BlendMode,
+    pub isolate: bool,
+    pub clip_path: Option<Arc<ClipPath>>,
     /// Whether the group is a context element (i.e. a use node)
-    pub(crate) is_context_element: bool,
-    pub(crate) mask: Option<Arc<Mask>>,
-    pub(crate) filters: Vec<Arc<filter::Filter>>,
-    pub(crate) bounding_box: Rect,
-    pub(crate) abs_bounding_box: Rect,
-    pub(crate) stroke_bounding_box: Rect,
-    pub(crate) abs_stroke_bounding_box: Rect,
-    pub(crate) layer_bounding_box: NonZeroRect,
-    pub(crate) abs_layer_bounding_box: NonZeroRect,
-    pub(crate) children: Vec<Node>,
+    pub is_context_element: bool,
+    pub mask: Option<Arc<Mask>>,
+    pub filters: Vec<Arc<filter::Filter>>,
+    pub bounding_box: Rect,
+    pub abs_bounding_box: Rect,
+    pub stroke_bounding_box: Rect,
+    pub abs_stroke_bounding_box: Rect,
+    pub layer_bounding_box: NonZeroRect,
+    pub abs_layer_bounding_box: NonZeroRect,
+    pub children: Vec<Node>,
 }
 
 impl Group {
-    pub(crate) fn empty() -> Self {
+    pub fn empty() -> Self {
         let dummy = Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap();
         Group {
             id: String::new(),
@@ -1269,20 +1283,21 @@ impl Default for PaintOrder {
 }
 
 /// A path element.
+#[allow(missing_docs)]
 #[derive(Clone, Debug)]
 pub struct Path {
-    pub(crate) id: String,
-    pub(crate) visible: bool,
-    pub(crate) fill: Option<Fill>,
-    pub(crate) stroke: Option<Stroke>,
-    pub(crate) paint_order: PaintOrder,
-    pub(crate) rendering_mode: ShapeRendering,
-    pub(crate) data: Arc<tiny_skia_path::Path>,
-    pub(crate) abs_transform: Transform,
-    pub(crate) bounding_box: Rect,
-    pub(crate) abs_bounding_box: Rect,
-    pub(crate) stroke_bounding_box: Rect,
-    pub(crate) abs_stroke_bounding_box: Rect,
+    pub id: String,
+    pub visible: bool,
+    pub fill: Option<Fill>,
+    pub stroke: Option<Stroke>,
+    pub paint_order: PaintOrder,
+    pub rendering_mode: ShapeRendering,
+    pub data: Arc<tiny_skia_path::Path>,
+    pub abs_transform: Transform,
+    pub bounding_box: Rect,
+    pub abs_bounding_box: Rect,
+    pub stroke_bounding_box: Rect,
+    pub abs_stroke_bounding_box: Rect,
 }
 
 impl Path {
@@ -1501,15 +1516,16 @@ impl std::fmt::Debug for ImageKind {
 /// A raster image element.
 ///
 /// `image` element in SVG.
+#[allow(missing_docs)]
 #[derive(Clone, Debug)]
 pub struct Image {
-    pub(crate) id: String,
-    pub(crate) visible: bool,
-    pub(crate) size: Size,
-    pub(crate) rendering_mode: ImageRendering,
-    pub(crate) kind: ImageKind,
-    pub(crate) abs_transform: Transform,
-    pub(crate) abs_bounding_box: NonZeroRect,
+    pub id: String,
+    pub visible: bool,
+    pub size: Size,
+    pub rendering_mode: ImageRendering,
+    pub kind: ImageKind,
+    pub abs_transform: Transform,
+    pub abs_bounding_box: NonZeroRect,
 }
 
 impl Image {
@@ -1579,19 +1595,20 @@ impl Image {
 }
 
 /// A nodes tree container.
+#[allow(missing_docs)]
 #[allow(missing_debug_implementations)]
 #[derive(Clone, Debug)]
 pub struct Tree {
-    pub(crate) size: Size,
-    pub(crate) root: Group,
-    pub(crate) linear_gradients: Vec<Arc<LinearGradient>>,
-    pub(crate) radial_gradients: Vec<Arc<RadialGradient>>,
-    pub(crate) patterns: Vec<Arc<Pattern>>,
-    pub(crate) clip_paths: Vec<Arc<ClipPath>>,
-    pub(crate) masks: Vec<Arc<Mask>>,
-    pub(crate) filters: Vec<Arc<filter::Filter>>,
+    pub size: Size,
+    pub root: Group,
+    pub linear_gradients: Vec<Arc<LinearGradient>>,
+    pub radial_gradients: Vec<Arc<RadialGradient>>,
+    pub patterns: Vec<Arc<Pattern>>,
+    pub clip_paths: Vec<Arc<ClipPath>>,
+    pub masks: Vec<Arc<Mask>>,
+    pub filters: Vec<Arc<filter::Filter>>,
     #[cfg(feature = "text")]
-    pub(crate) fontdb: Arc<fontdb::Database>,
+    pub fontdb: Arc<fontdb::Database>,
 }
 
 impl Tree {

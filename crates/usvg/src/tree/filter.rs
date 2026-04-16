@@ -1,6 +1,8 @@
 // Copyright 2018 the Resvg Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![allow(missing_docs)]
+
 //! SVG filter types.
 
 use strict_num::PositiveF32;
@@ -12,9 +14,9 @@ use crate::{BlendMode, Color, Group, NonEmptyString, NonZeroF32, NonZeroRect, Op
 /// `filter` element in the SVG.
 #[derive(Debug)]
 pub struct Filter {
-    pub(crate) id: NonEmptyString,
-    pub(crate) rect: NonZeroRect,
-    pub(crate) primitives: Vec<Primitive>,
+    pub id: NonEmptyString,
+    pub rect: NonZeroRect,
+    pub primitives: Vec<Primitive>,
 }
 
 impl Filter {
@@ -42,10 +44,10 @@ impl Filter {
 /// A filter primitive element.
 #[derive(Clone, Debug)]
 pub struct Primitive {
-    pub(crate) rect: NonZeroRect,
-    pub(crate) color_interpolation: ColorInterpolation,
-    pub(crate) result: String,
-    pub(crate) kind: Kind,
+    pub rect: NonZeroRect,
+    pub color_interpolation: ColorInterpolation,
+    pub result: String,
+    pub kind: Kind,
 }
 
 impl Primitive {
@@ -149,9 +151,9 @@ pub enum ColorInterpolation {
 /// `feBlend` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct Blend {
-    pub(crate) input1: Input,
-    pub(crate) input2: Input,
-    pub(crate) mode: BlendMode,
+    pub input1: Input,
+    pub input2: Input,
+    pub mode: BlendMode,
 }
 
 impl Blend {
@@ -182,8 +184,8 @@ impl Blend {
 /// `feColorMatrix` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct ColorMatrix {
-    pub(crate) input: Input,
-    pub(crate) kind: ColorMatrixKind,
+    pub input: Input,
+    pub kind: ColorMatrixKind,
 }
 
 impl ColorMatrix {
@@ -226,11 +228,11 @@ impl Default for ColorMatrixKind {
 /// `feComponentTransfer` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct ComponentTransfer {
-    pub(crate) input: Input,
-    pub(crate) func_r: TransferFunction,
-    pub(crate) func_g: TransferFunction,
-    pub(crate) func_b: TransferFunction,
-    pub(crate) func_a: TransferFunction,
+    pub input: Input,
+    pub func_r: TransferFunction,
+    pub func_g: TransferFunction,
+    pub func_b: TransferFunction,
+    pub func_a: TransferFunction,
 }
 
 impl ComponentTransfer {
@@ -298,9 +300,9 @@ pub enum TransferFunction {
 /// `feComposite` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct Composite {
-    pub(crate) input1: Input,
-    pub(crate) input2: Input,
-    pub(crate) operator: CompositeOperator,
+    pub input1: Input,
+    pub input2: Input,
+    pub operator: CompositeOperator,
 }
 
 impl Composite {
@@ -343,12 +345,12 @@ pub enum CompositeOperator {
 /// `feConvolveMatrix` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct ConvolveMatrix {
-    pub(crate) input: Input,
-    pub(crate) matrix: ConvolveMatrixData,
-    pub(crate) divisor: NonZeroF32,
-    pub(crate) bias: f32,
-    pub(crate) edge_mode: EdgeMode,
-    pub(crate) preserve_alpha: bool,
+    pub input: Input,
+    pub matrix: ConvolveMatrixData,
+    pub divisor: NonZeroF32,
+    pub bias: f32,
+    pub edge_mode: EdgeMode,
+    pub preserve_alpha: bool,
 }
 
 impl ConvolveMatrix {
@@ -398,11 +400,11 @@ impl ConvolveMatrix {
 /// Used primarily by [`ConvolveMatrix`].
 #[derive(Clone, Debug)]
 pub struct ConvolveMatrixData {
-    pub(crate) target_x: u32,
-    pub(crate) target_y: u32,
-    pub(crate) columns: u32,
-    pub(crate) rows: u32,
-    pub(crate) data: Vec<f32>,
+    pub target_x: u32,
+    pub target_y: u32,
+    pub columns: u32,
+    pub rows: u32,
+    pub data: Vec<f32>,
 }
 
 impl ConvolveMatrixData {
@@ -448,7 +450,7 @@ impl ConvolveMatrixData {
     /// - `columns` * `rows` != `data.len()`
     /// - `target_x` >= `columns`
     /// - `target_y` >= `rows`
-    pub(crate) fn new(
+    pub fn new(
         target_x: u32,
         target_y: u32,
         columns: u32,
@@ -492,11 +494,11 @@ pub enum EdgeMode {
 /// `feDisplacementMap` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct DisplacementMap {
-    pub(crate) input1: Input,
-    pub(crate) input2: Input,
-    pub(crate) scale: f32,
-    pub(crate) x_channel_selector: ColorChannel,
-    pub(crate) y_channel_selector: ColorChannel,
+    pub input1: Input,
+    pub input2: Input,
+    pub scale: f32,
+    pub x_channel_selector: ColorChannel,
+    pub y_channel_selector: ColorChannel,
 }
 
 impl DisplacementMap {
@@ -553,13 +555,13 @@ pub enum ColorChannel {
 /// `feDropShadow` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct DropShadow {
-    pub(crate) input: Input,
-    pub(crate) dx: f32,
-    pub(crate) dy: f32,
-    pub(crate) std_dev_x: PositiveF32,
-    pub(crate) std_dev_y: PositiveF32,
-    pub(crate) color: Color,
-    pub(crate) opacity: Opacity,
+    pub input: Input,
+    pub dx: f32,
+    pub dy: f32,
+    pub std_dev_x: PositiveF32,
+    pub std_dev_y: PositiveF32,
+    pub color: Color,
+    pub opacity: Opacity,
 }
 
 impl DropShadow {
@@ -614,8 +616,8 @@ impl DropShadow {
 /// `feFlood` element in the SVG.
 #[derive(Clone, Copy, Debug)]
 pub struct Flood {
-    pub(crate) color: Color,
-    pub(crate) opacity: Opacity,
+    pub color: Color,
+    pub opacity: Opacity,
 }
 
 impl Flood {
@@ -639,9 +641,9 @@ impl Flood {
 /// `feGaussianBlur` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct GaussianBlur {
-    pub(crate) input: Input,
-    pub(crate) std_dev_x: PositiveF32,
-    pub(crate) std_dev_y: PositiveF32,
+    pub input: Input,
+    pub std_dev_x: PositiveF32,
+    pub std_dev_y: PositiveF32,
 }
 
 impl GaussianBlur {
@@ -672,7 +674,7 @@ impl GaussianBlur {
 /// `feImage` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct Image {
-    pub(crate) root: Group,
+    pub root: Group,
 }
 
 impl Image {
@@ -687,11 +689,11 @@ impl Image {
 /// `feDiffuseLighting` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct DiffuseLighting {
-    pub(crate) input: Input,
-    pub(crate) surface_scale: f32,
-    pub(crate) diffuse_constant: f32,
-    pub(crate) lighting_color: Color,
-    pub(crate) light_source: LightSource,
+    pub input: Input,
+    pub surface_scale: f32,
+    pub diffuse_constant: f32,
+    pub lighting_color: Color,
+    pub light_source: LightSource,
 }
 
 impl DiffuseLighting {
@@ -734,12 +736,12 @@ impl DiffuseLighting {
 /// `feSpecularLighting` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct SpecularLighting {
-    pub(crate) input: Input,
-    pub(crate) surface_scale: f32,
-    pub(crate) specular_constant: f32,
-    pub(crate) specular_exponent: f32,
-    pub(crate) lighting_color: Color,
-    pub(crate) light_source: LightSource,
+    pub input: Input,
+    pub surface_scale: f32,
+    pub specular_constant: f32,
+    pub specular_exponent: f32,
+    pub lighting_color: Color,
+    pub light_source: LightSource,
 }
 
 impl SpecularLighting {
@@ -884,7 +886,7 @@ pub struct SpotLight {
 /// `feMerge` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct Merge {
-    pub(crate) inputs: Vec<Input>,
+    pub inputs: Vec<Input>,
 }
 
 impl Merge {
@@ -901,10 +903,10 @@ impl Merge {
 /// `feMorphology` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct Morphology {
-    pub(crate) input: Input,
-    pub(crate) operator: MorphologyOperator,
-    pub(crate) radius_x: PositiveF32,
-    pub(crate) radius_y: PositiveF32,
+    pub input: Input,
+    pub operator: MorphologyOperator,
+    pub radius_x: PositiveF32,
+    pub radius_y: PositiveF32,
 }
 
 impl Morphology {
@@ -954,9 +956,9 @@ pub enum MorphologyOperator {
 /// `feOffset` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct Offset {
-    pub(crate) input: Input,
-    pub(crate) dx: f32,
-    pub(crate) dy: f32,
+    pub input: Input,
+    pub dx: f32,
+    pub dy: f32,
 }
 
 impl Offset {
@@ -983,7 +985,7 @@ impl Offset {
 /// `feTile` element in the SVG.
 #[derive(Clone, Debug)]
 pub struct Tile {
-    pub(crate) input: Input,
+    pub input: Input,
 }
 
 impl Tile {
@@ -1000,12 +1002,12 @@ impl Tile {
 /// `feTurbulence` element in the SVG.
 #[derive(Clone, Copy, Debug)]
 pub struct Turbulence {
-    pub(crate) base_frequency_x: PositiveF32,
-    pub(crate) base_frequency_y: PositiveF32,
-    pub(crate) num_octaves: u32,
-    pub(crate) seed: i32,
-    pub(crate) stitch_tiles: bool,
-    pub(crate) kind: TurbulenceKind,
+    pub base_frequency_x: PositiveF32,
+    pub base_frequency_y: PositiveF32,
+    pub num_octaves: u32,
+    pub seed: i32,
+    pub stitch_tiles: bool,
+    pub kind: TurbulenceKind,
 }
 
 impl Turbulence {
