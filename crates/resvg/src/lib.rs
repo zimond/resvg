@@ -23,7 +23,9 @@ mod geom;
 mod image;
 mod mask;
 mod path;
-pub mod render;
+mod render;
+
+pub use image::{CustomImageDecoder, set_custom_image_decoder};
 
 /// Renders a tree onto the pixmap.
 ///

@@ -1,6 +1,32 @@
 // Copyright 2018 the Resvg Authors
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::sync::{Arc, OnceLock, RwLock};
+
+/// A custom raster image decoder.
+///
+/// Return `None` when the decoder does not recognize the image kind so resvg can
+/// continue with its built-in decoders.
+pub type CustomImageDecoder =
+    dyn Fn(&usvg::ImageKind) -> Option<tiny_skia::Pixmap> + Send + Sync + 'static;
+
+static CUSTOM_IMAGE_DECODER: OnceLock<RwLock<Option<Arc<CustomImageDecoder>>>> = OnceLock::new();
+
+/// Sets a custom raster image decoder.
+///
+/// The decoder is called before resvg's built-in raster image decoders.
+pub fn set_custom_image_decoder(decoder: Option<Arc<CustomImageDecoder>>) {
+    let slot = CUSTOM_IMAGE_DECODER.get_or_init(|| RwLock::new(None));
+    if let Ok(mut current) = slot.write() {
+        *current = decoder;
+    }
+}
+
+fn custom_decode_raster(image: &usvg::ImageKind) -> Option<tiny_skia::Pixmap> {
+    let decoder = CUSTOM_IMAGE_DECODER.get()?.read().ok()?.clone()?;
+    decoder(image)
+}
+
 pub fn render(
     image: &usvg::Image,
     transform: tiny_skia::Transform,
@@ -55,11 +81,16 @@ fn render_vector(
 
 #[cfg(feature = "raster-images")]
 mod raster_images {
+    use super::custom_decode_raster;
     use crate::OptionLog;
     use std::io::Cursor;
     use usvg::ImageRendering;
 
     fn decode_raster(image: &usvg::ImageKind) -> Option<tiny_skia::Pixmap> {
+        if let Some(pixmap) = custom_decode_raster(image) {
+            return Some(pixmap);
+        }
+
         match image {
             usvg::ImageKind::SVG(_) => None,
             usvg::ImageKind::JPEG(data) => {

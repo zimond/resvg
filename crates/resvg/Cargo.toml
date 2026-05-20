@@ -1,6 +1,6 @@
 [package]
 name = "resvg_exposed"
-version = "0.47.0"
+version = "0.47.1"
 keywords = ["svg", "render", "raster"]
 license.workspace = true
 edition = "2024"
