@@ -22,6 +22,7 @@ pub fn set_custom_image_decoder(decoder: Option<Arc<CustomImageDecoder>>) {
     }
 }
 
+#[cfg(feature = "raster-images")]
 fn custom_decode_raster(image: &usvg::ImageKind) -> Option<tiny_skia::Pixmap> {
     let decoder = CUSTOM_IMAGE_DECODER.get()?.read().ok()?.clone()?;
     decoder(image)

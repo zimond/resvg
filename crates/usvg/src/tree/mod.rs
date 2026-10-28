@@ -77,6 +77,15 @@ pub enum Units {
 
 // `Units` cannot have a default value, because it changes depending on an element.
 
+impl std::fmt::Display for Units {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Units::UserSpaceOnUse => write!(f, "userSpaceOnUse"),
+            Units::ObjectBoundingBox => write!(f, "objectBoundingBox"),
+        }
+    }
+}
+
 /// A visibility property.
 ///
 /// `visibility` attribute in the SVG.
@@ -224,6 +233,7 @@ pub enum BlendMode {
     Saturation,
     Color,
     Luminosity,
+    PlusLighter,
 }
 
 impl Default for BlendMode {
@@ -251,6 +261,7 @@ impl Display for BlendMode {
             BlendMode::Saturation => "saturation",
             BlendMode::Color => "color",
             BlendMode::Luminosity => "luminosity",
+            BlendMode::PlusLighter => "plus-lighter",
         };
         write!(f, "{blend_mode}")
     }
@@ -1059,6 +1070,7 @@ pub struct Group {
 }
 
 impl Group {
+    /// Creates an empty group with identity transforms.
     pub fn empty() -> Self {
         let dummy = Rect::from_xywh(0.0, 0.0, 0.0, 0.0).unwrap();
         Group {
@@ -1179,6 +1191,7 @@ impl Group {
     ///
     /// Conceptually, this is `stroke_bounding_box` expanded and/or clipped
     /// by `filters_bounding_box`, but also including all the children.
+    /// Groups without filters are additionally clipped by their clip path.
     /// This is the bounding box `resvg` will later use to allocate layers/pixmaps
     /// during isolated groups rendering.
     ///
@@ -1314,7 +1327,8 @@ impl Path {
         )
     }
 
-    pub(crate) fn new(
+    /// Creates a path and calculates its geometry and stroke bounding boxes.
+    pub fn new(
         id: String,
         visible: bool,
         fill: Option<Fill>,
@@ -1617,6 +1631,11 @@ impl Tree {
     /// Size of an image that should be created to fit the SVG.
     ///
     /// `width` and `height` in SVG.
+    ///
+    /// Note that this does not necessarily represent the bounding box of the
+    /// rendered contents. Use
+    /// [`self.root().abs_layer_bounding_box()`](Group::abs_layer_bounding_box)
+    /// to retrieve it instead.
     pub fn size(&self) -> Size {
         self.size
     }
@@ -1866,7 +1885,9 @@ impl Group {
         bbox.to_non_zero_rect()
     }
 
-    pub(crate) fn calculate_bounding_boxes(&mut self) -> Option<()> {
+    /// Recalculates group bounds from its children and effects.
+    /// Child bounds and absolute transforms must already be up to date.
+    pub fn calculate_bounding_boxes(&mut self) -> Option<()> {
         let mut bbox = BBox::default();
         let mut abs_bbox = BBox::default();
         let mut stroke_bbox = BBox::default();
@@ -1923,7 +1944,19 @@ impl Group {
         if let Some(filter_bbox) = self.filters_bounding_box() {
             self.layer_bounding_box = filter_bbox;
         } else {
-            self.layer_bounding_box = layer_bbox.to_non_zero_rect()?;
+            let mut layer_bbox = layer_bbox.to_non_zero_rect()?;
+            // Nothing outside the clip path is visible. Filtered groups are excluded above,
+            // because filters are applied before clipping and need their whole region.
+            // The clip's stroke bounding box is used because, unlike the object one,
+            // it covers the glyph outlines of text.
+            if let Some(clip) = &self.clip_path {
+                let clip_bbox = clip.root.stroke_bounding_box.transform(clip.transform)?;
+                layer_bbox = layer_bbox
+                    .to_rect()
+                    .intersect(&clip_bbox)?
+                    .to_non_zero_rect()?;
+            }
+            self.layer_bounding_box = layer_bbox;
         }
 
         self.abs_layer_bounding_box = self.layer_bounding_box.transform(self.abs_transform)?;

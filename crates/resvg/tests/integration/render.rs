@@ -29,6 +29,7 @@ use crate::render;
 #[test] fn filters_enable_background_with_opacity_4() { assert_eq!(render("tests/filters/enable-background/with-opacity-4"), 0); }
 #[test] fn filters_enable_background_with_transform() { assert_eq!(render("tests/filters/enable-background/with-transform"), 0); }
 #[test] fn filters_feBlend_empty() { assert_eq!(render("tests/filters/feBlend/empty"), 0); }
+#[test] fn filters_feBlend_invalid_mode_plus_lighter() { assert_eq!(render("tests/filters/feBlend/invalid-mode-plus-lighter"), 0); }
 #[test] fn filters_feBlend_mode_eq_color_burn() { assert_eq!(render("tests/filters/feBlend/mode=color-burn"), 0); }
 #[test] fn filters_feBlend_mode_eq_darken() { assert_eq!(render("tests/filters/feBlend/mode=darken"), 0); }
 #[test] fn filters_feBlend_mode_eq_hue() { assert_eq!(render("tests/filters/feBlend/mode=hue"), 0); }
@@ -81,6 +82,7 @@ use crate::render;
 #[test] fn filters_feComposite_invalid_operator() { assert_eq!(render("tests/filters/feComposite/invalid-operator"), 0); }
 #[test] fn filters_feComposite_operator_eq_arithmetic_and_invalid_k1_4() { assert_eq!(render("tests/filters/feComposite/operator=arithmetic-and-invalid-k1-4"), 0); }
 #[test] fn filters_feComposite_operator_eq_arithmetic_on_sRGB() { assert_eq!(render("tests/filters/feComposite/operator=arithmetic-on-sRGB"), 0); }
+#[test] fn filters_feComposite_operator_eq_arithmetic_with_huge_region() { assert_eq!(render("tests/filters/feComposite/operator=arithmetic-with-huge-region"), 0); }
 #[test] fn filters_feComposite_operator_eq_arithmetic_with_large_k1_4() { assert_eq!(render("tests/filters/feComposite/operator=arithmetic-with-large-k1-4"), 0); }
 #[test] fn filters_feComposite_operator_eq_arithmetic_with_opacity_on_sRGB() { assert_eq!(render("tests/filters/feComposite/operator=arithmetic-with-opacity-on-sRGB"), 0); }
 #[test] fn filters_feComposite_operator_eq_arithmetic_with_opacity() { assert_eq!(render("tests/filters/feComposite/operator=arithmetic-with-opacity"), 0); }
@@ -89,6 +91,7 @@ use crate::render;
 #[test] fn filters_feComposite_operator_eq_arithmetic() { assert_eq!(render("tests/filters/feComposite/operator=arithmetic"), 0); }
 #[test] fn filters_feComposite_operator_eq_atop() { assert_eq!(render("tests/filters/feComposite/operator=atop"), 0); }
 #[test] fn filters_feComposite_operator_eq_in() { assert_eq!(render("tests/filters/feComposite/operator=in"), 0); }
+#[test] fn filters_feComposite_operator_eq_lighter() { assert_eq!(render("tests/filters/feComposite/operator=lighter"), 0); }
 #[test] fn filters_feComposite_operator_eq_out() { assert_eq!(render("tests/filters/feComposite/operator=out"), 0); }
 #[test] fn filters_feComposite_operator_eq_over() { assert_eq!(render("tests/filters/feComposite/operator=over"), 0); }
 #[test] fn filters_feComposite_operator_eq_xor() { assert_eq!(render("tests/filters/feComposite/operator=xor"), 0); }
@@ -141,6 +144,7 @@ use crate::render;
 #[test] fn filters_feDiffuseLighting_surfaceScale_eq_0() { assert_eq!(render("tests/filters/feDiffuseLighting/surfaceScale=0"), 0); }
 #[test] fn filters_feDiffuseLighting_surfaceScale_eq_1_33() { assert_eq!(render("tests/filters/feDiffuseLighting/surfaceScale=1.33"), 0); }
 #[test] fn filters_feDiffuseLighting_surfaceScale_eq_5() { assert_eq!(render("tests/filters/feDiffuseLighting/surfaceScale=5"), 0); }
+#[test] fn filters_feDiffuseLighting_tiny_element_with_spot_light() { assert_eq!(render("tests/filters/feDiffuseLighting/tiny-element-with-spot-light"), 0); }
 #[test] fn filters_feDisplacementMap_simple_case() { assert_eq!(render("tests/filters/feDisplacementMap/simple-case"), 0); }
 #[test] fn filters_feDistantLight_default_attributes() { assert_eq!(render("tests/filters/feDistantLight/default-attributes"), 0); }
 #[test] fn filters_feDistantLight_negative_azimuth_and_elevation() { assert_eq!(render("tests/filters/feDistantLight/negative-azimuth-and-elevation"), 0); }
@@ -192,6 +196,7 @@ use crate::render;
 #[test] fn filters_feImage_recursive_links_1() { assert_eq!(render("tests/filters/feImage/recursive-links-1"), 0); }
 #[test] fn filters_feImage_recursive_links_2() { assert_eq!(render("tests/filters/feImage/recursive-links-2"), 0); }
 #[test] fn filters_feImage_self_recursive() { assert_eq!(render("tests/filters/feImage/self-recursive"), 0); }
+#[test] fn filters_feImage_shared_with_objectBoundingBox_gradient() { assert_eq!(render("tests/filters/feImage/shared-with-objectBoundingBox-gradient"), 0); }
 #[test] fn filters_feImage_simple_case() { assert_eq!(render("tests/filters/feImage/simple-case"), 0); }
 #[test] fn filters_feImage_svg() { assert_eq!(render("tests/filters/feImage/svg"), 0); }
 #[test] fn filters_feImage_with_subregion_1() { assert_eq!(render("tests/filters/feImage/with-subregion-1"), 0); }
@@ -205,10 +210,13 @@ use crate::render;
 #[test] fn filters_feMerge_color_interpolation_filters_eq_linearRGB() { assert_eq!(render("tests/filters/feMerge/color-interpolation-filters=linearRGB"), 0); }
 #[test] fn filters_feMerge_color_interpolation_filters_eq_sRGB() { assert_eq!(render("tests/filters/feMerge/color-interpolation-filters=sRGB"), 0); }
 #[test] fn filters_feMerge_complex_transform() { assert_eq!(render("tests/filters/feMerge/complex-transform"), 0); }
+#[test] fn filters_feMorphology_centered_kernel() { assert_eq!(render("tests/filters/feMorphology/centered-kernel"), 0); }
 #[test] fn filters_feMorphology_empty_radius() { assert_eq!(render("tests/filters/feMorphology/empty-radius"), 0); }
+#[test] fn filters_feMorphology_fractional_radius() { assert_eq!(render("tests/filters/feMorphology/fractional-radius"), 0); }
 #[test] fn filters_feMorphology_negative_radius() { assert_eq!(render("tests/filters/feMorphology/negative-radius"), 0); }
 #[test] fn filters_feMorphology_no_radius() { assert_eq!(render("tests/filters/feMorphology/no-radius"), 0); }
 #[test] fn filters_feMorphology_operator_eq_dilate() { assert_eq!(render("tests/filters/feMorphology/operator=dilate"), 0); }
+#[test] fn filters_feMorphology_radius_larger_than_region() { assert_eq!(render("tests/filters/feMorphology/radius-larger-than-region"), 0); }
 #[test] fn filters_feMorphology_radius_with_too_many_values() { assert_eq!(render("tests/filters/feMorphology/radius-with-too-many-values"), 0); }
 #[test] fn filters_feMorphology_radius_eq_0_5_with_objectBoundingBox() { assert_eq!(render("tests/filters/feMorphology/radius=0.5-with-objectBoundingBox"), 0); }
 #[test] fn filters_feMorphology_radius_eq_0_5() { assert_eq!(render("tests/filters/feMorphology/radius=0.5"), 0); }
@@ -341,6 +349,7 @@ use crate::render;
 #[test] fn filters_filter_with_multiple_transforms_1() { assert_eq!(render("tests/filters/filter/with-multiple-transforms-1"), 0); }
 #[test] fn filters_filter_with_multiple_transforms_2() { assert_eq!(render("tests/filters/filter/with-multiple-transforms-2"), 0); }
 #[test] fn filters_filter_with_region_and_filterUnits_eq_userSpaceOnUse() { assert_eq!(render("tests/filters/filter/with-region-and-filterUnits=userSpaceOnUse"), 0); }
+#[test] fn filters_filter_with_region_and_skew_on_intermediate_result() { assert_eq!(render("tests/filters/filter/with-region-and-skew-on-intermediate-result"), 0); }
 #[test] fn filters_filter_with_region_and_subregion() { assert_eq!(render("tests/filters/filter/with-region-and-subregion"), 0); }
 #[test] fn filters_filter_with_region_outside_the_canvas() { assert_eq!(render("tests/filters/filter/with-region-outside-the-canvas"), 0); }
 #[test] fn filters_filter_with_region_outside_the_viewbox() { assert_eq!(render("tests/filters/filter/with-region-outside-the-viewbox"), 0); }
@@ -348,6 +357,7 @@ use crate::render;
 #[test] fn filters_filter_with_subregion_1() { assert_eq!(render("tests/filters/filter/with-subregion-1"), 0); }
 #[test] fn filters_filter_with_subregion_2() { assert_eq!(render("tests/filters/filter/with-subregion-2"), 0); }
 #[test] fn filters_filter_with_subregion_3() { assert_eq!(render("tests/filters/filter/with-subregion-3"), 0); }
+#[test] fn filters_filter_with_subregion_and_rotation() { assert_eq!(render("tests/filters/filter/with-subregion-and-rotation"), 0); }
 #[test] fn filters_filter_with_transform_outside_of_canvas() { assert_eq!(render("tests/filters/filter/with-transform-outside-of-canvas"), 0); }
 #[test] fn filters_filter_without_region_and_filterUnits_eq_userSpaceOnUse() { assert_eq!(render("tests/filters/filter/without-region-and-filterUnits=userSpaceOnUse"), 0); }
 #[test] fn filters_filter_zero_sized_subregion() { assert_eq!(render("tests/filters/filter/zero-sized-subregion"), 0); }
@@ -392,6 +402,7 @@ use crate::render;
 #[test] fn filters_filter_functions_one_invalid_url_in_list() { assert_eq!(render("tests/filters/filter-functions/one-invalid-url-in-list"), 0); }
 #[test] fn filters_filter_functions_two_drop_shadow_function() { assert_eq!(render("tests/filters/filter-functions/two-drop-shadow-function"), 0); }
 #[test] fn filters_filter_functions_two_exact_urls() { assert_eq!(render("tests/filters/filter-functions/two-exact-urls"), 0); }
+#[test] fn filters_filter_functions_two_urls_with_different_regions() { assert_eq!(render("tests/filters/filter-functions/two-urls-with-different-regions"), 0); }
 #[test] fn filters_filter_functions_two_urls() { assert_eq!(render("tests/filters/filter-functions/two-urls"), 0); }
 #[test] fn filters_filter_functions_url_and_grayscale() { assert_eq!(render("tests/filters/filter-functions/url-and-grayscale"), 0); }
 #[test] fn filters_flood_color_hsla_color() { assert_eq!(render("tests/filters/flood-color/hsla-color"), 0); }
@@ -487,6 +498,7 @@ use crate::render;
 #[test] fn masking_mask_recursive_on_self() { assert_eq!(render("tests/masking/mask/recursive-on-self"), 0); }
 #[test] fn masking_mask_recursive() { assert_eq!(render("tests/masking/mask/recursive"), 0); }
 #[test] fn masking_mask_self_recursive() { assert_eq!(render("tests/masking/mask/self-recursive"), 0); }
+#[test] fn masking_mask_shared_with_objectBoundingBox_gradient() { assert_eq!(render("tests/masking/mask/shared-with-objectBoundingBox-gradient"), 0); }
 #[test] fn masking_mask_simple_case() { assert_eq!(render("tests/masking/mask/simple-case"), 0); }
 #[test] fn masking_mask_transform_has_no_effect() { assert_eq!(render("tests/masking/mask/transform-has-no-effect"), 0); }
 #[test] fn masking_mask_transform_on_shape() { assert_eq!(render("tests/masking/mask/transform-on-shape"), 0); }
@@ -503,10 +515,13 @@ use crate::render;
 #[test] fn paint_servers_linearGradient_attributes_via_xlink_href() { assert_eq!(render("tests/paint-servers/linearGradient/attributes-via-xlink-href"), 0); }
 #[test] fn paint_servers_linearGradient_default_attributes() { assert_eq!(render("tests/paint-servers/linearGradient/default-attributes"), 0); }
 #[test] fn paint_servers_linearGradient_gradientTransform_and_transform() { assert_eq!(render("tests/paint-servers/linearGradient/gradientTransform-and-transform"), 0); }
+#[test] fn paint_servers_linearGradient_gradientTransform_via_href() { assert_eq!(render("tests/paint-servers/linearGradient/gradientTransform-via-href"), 0); }
 #[test] fn paint_servers_linearGradient_gradientTransform() { assert_eq!(render("tests/paint-servers/linearGradient/gradientTransform"), 0); }
 #[test] fn paint_servers_linearGradient_gradientUnits_eq_objectBoundingBox_with_percent() { assert_eq!(render("tests/paint-servers/linearGradient/gradientUnits=objectBoundingBox-with-percent"), 0); }
 #[test] fn paint_servers_linearGradient_gradientUnits_eq_userSpaceOnUse_with_percent() { assert_eq!(render("tests/paint-servers/linearGradient/gradientUnits=userSpaceOnUse-with-percent"), 0); }
 #[test] fn paint_servers_linearGradient_gradientUnits_eq_userSpaceOnUse() { assert_eq!(render("tests/paint-servers/linearGradient/gradientUnits=userSpaceOnUse"), 0); }
+#[test] fn paint_servers_linearGradient_href_precedence_over_xlink() { assert_eq!(render("tests/paint-servers/linearGradient/href-precedence-over-xlink"), 0); }
+#[test] fn paint_servers_linearGradient_href_with_invalid_prefix() { assert_eq!(render("tests/paint-servers/linearGradient/href-with-invalid-prefix"), 0); }
 #[test] fn paint_servers_linearGradient_hsla_color() { assert_eq!(render("tests/paint-servers/linearGradient/hsla-color"), 0); }
 #[test] fn paint_servers_linearGradient_invalid_child_1() { assert_eq!(render("tests/paint-servers/linearGradient/invalid-child-1"), 0); }
 #[test] fn paint_servers_linearGradient_invalid_child_2() { assert_eq!(render("tests/paint-servers/linearGradient/invalid-child-2"), 0); }
@@ -550,6 +565,7 @@ use crate::render;
 #[test] fn paint_servers_pattern_pattern_on_child() { assert_eq!(render("tests/paint-servers/pattern/pattern-on-child"), 0); }
 #[test] fn paint_servers_pattern_patternContentUnits_with_viewBox() { assert_eq!(render("tests/paint-servers/pattern/patternContentUnits-with-viewBox"), 0); }
 #[test] fn paint_servers_pattern_patternContentUnits_eq_objectBoundingBox() { assert_eq!(render("tests/paint-servers/pattern/patternContentUnits=objectBoundingBox"), 0); }
+#[test] fn paint_servers_pattern_patternTransform_via_href() { assert_eq!(render("tests/paint-servers/pattern/patternTransform-via-href"), 0); }
 #[test] fn paint_servers_pattern_patternUnits_eq_objectBoundingBox_with_percent() { assert_eq!(render("tests/paint-servers/pattern/patternUnits=objectBoundingBox-with-percent"), 0); }
 #[test] fn paint_servers_pattern_patternUnits_eq_objectBoundingBox() { assert_eq!(render("tests/paint-servers/pattern/patternUnits=objectBoundingBox"), 0); }
 #[test] fn paint_servers_pattern_patternUnits_eq_userSpaceOnUse_with_percent() { assert_eq!(render("tests/paint-servers/pattern/patternUnits=userSpaceOnUse-with-percent"), 0); }
@@ -557,6 +573,7 @@ use crate::render;
 #[test] fn paint_servers_pattern_recursive_on_child() { assert_eq!(render("tests/paint-servers/pattern/recursive-on-child"), 0); }
 #[test] fn paint_servers_pattern_self_recursive_on_child() { assert_eq!(render("tests/paint-servers/pattern/self-recursive-on-child"), 0); }
 #[test] fn paint_servers_pattern_self_recursive() { assert_eq!(render("tests/paint-servers/pattern/self-recursive"), 0); }
+#[test] fn paint_servers_pattern_shared_with_objectBoundingBox_gradient() { assert_eq!(render("tests/paint-servers/pattern/shared-with-objectBoundingBox-gradient"), 0); }
 #[test] fn paint_servers_pattern_simple_case() { assert_eq!(render("tests/paint-servers/pattern/simple-case"), 0); }
 #[test] fn paint_servers_pattern_text_child() { assert_eq!(render("tests/paint-servers/pattern/text-child"), 0); }
 #[test] fn paint_servers_pattern_tiny_pattern_upscaled() { assert_eq!(render("tests/paint-servers/pattern/tiny-pattern-upscaled"), 0); }
@@ -582,6 +599,7 @@ use crate::render;
 #[test] fn paint_servers_radialGradient_fy_resolving_2() { assert_eq!(render("tests/paint-servers/radialGradient/fy-resolving-2"), 0); }
 #[test] fn paint_servers_radialGradient_fy_resolving_3() { assert_eq!(render("tests/paint-servers/radialGradient/fy-resolving-3"), 0); }
 #[test] fn paint_servers_radialGradient_gradientTransform_and_transform() { assert_eq!(render("tests/paint-servers/radialGradient/gradientTransform-and-transform"), 0); }
+#[test] fn paint_servers_radialGradient_gradientTransform_via_href() { assert_eq!(render("tests/paint-servers/radialGradient/gradientTransform-via-href"), 0); }
 #[test] fn paint_servers_radialGradient_gradientTransform() { assert_eq!(render("tests/paint-servers/radialGradient/gradientTransform"), 0); }
 #[test] fn paint_servers_radialGradient_gradientUnits_eq_objectBoundingBox_with_percent() { assert_eq!(render("tests/paint-servers/radialGradient/gradientUnits=objectBoundingBox-with-percent"), 0); }
 #[test] fn paint_servers_radialGradient_gradientUnits_eq_userSpaceOnUse_with_percent() { assert_eq!(render("tests/paint-servers/radialGradient/gradientUnits=userSpaceOnUse-with-percent"), 0); }
@@ -808,6 +826,7 @@ use crate::render;
 #[test] fn painting_marker_with_markerUnits_eq_userSpaceOnUse() { assert_eq!(render("tests/painting/marker/with-markerUnits=userSpaceOnUse"), 0); }
 #[test] fn painting_marker_with_viewBox_1() { assert_eq!(render("tests/painting/marker/with-viewBox-1"), 0); }
 #[test] fn painting_marker_with_viewBox_2() { assert_eq!(render("tests/painting/marker/with-viewBox-2"), 0); }
+#[test] fn painting_marker_with_viewBox_and_preserveAspectRatio_eq_slice() { assert_eq!(render("tests/painting/marker/with-viewBox-and-preserveAspectRatio=slice"), 0); }
 #[test] fn painting_marker_zero_length_path_1() { assert_eq!(render("tests/painting/marker/zero-length-path-1"), 0); }
 #[test] fn painting_marker_zero_length_path_2() { assert_eq!(render("tests/painting/marker/zero-length-path-2"), 0); }
 #[test] fn painting_marker_zero_sized_stroke() { assert_eq!(render("tests/painting/marker/zero-sized-stroke"), 0); }
@@ -828,6 +847,7 @@ use crate::render;
 #[test] fn painting_mix_blend_mode_opacity_on_element() { assert_eq!(render("tests/painting/mix-blend-mode/opacity-on-element"), 0); }
 #[test] fn painting_mix_blend_mode_opacity_on_group() { assert_eq!(render("tests/painting/mix-blend-mode/opacity-on-group"), 0); }
 #[test] fn painting_mix_blend_mode_overlay() { assert_eq!(render("tests/painting/mix-blend-mode/overlay"), 0); }
+#[test] fn painting_mix_blend_mode_plus_lighter() { assert_eq!(render("tests/painting/mix-blend-mode/plus-lighter"), 0); }
 #[test] fn painting_mix_blend_mode_saturation() { assert_eq!(render("tests/painting/mix-blend-mode/saturation"), 0); }
 #[test] fn painting_mix_blend_mode_screen() { assert_eq!(render("tests/painting/mix-blend-mode/screen"), 0); }
 #[test] fn painting_mix_blend_mode_soft_light() { assert_eq!(render("tests/painting/mix-blend-mode/soft-light"), 0); }
@@ -1128,6 +1148,7 @@ use crate::render;
 #[test] fn structure_image_no_width_and_height() { assert_eq!(render("tests/structure/image/no-width-and-height"), 0); }
 #[test] fn structure_image_no_width_on_svg() { assert_eq!(render("tests/structure/image/no-width-on-svg"), 0); }
 #[test] fn structure_image_no_width() { assert_eq!(render("tests/structure/image/no-width"), 0); }
+#[test] fn structure_image_objectBoundingBox_clip_on_sliced_image() { assert_eq!(render("tests/structure/image/objectBoundingBox-clip-on-sliced-image"), 0); }
 #[test] fn structure_image_preserveAspectRatio_eq_none_on_svg() { assert_eq!(render("tests/structure/image/preserveAspectRatio=none-on-svg"), 0); }
 #[test] fn structure_image_preserveAspectRatio_eq_none() { assert_eq!(render("tests/structure/image/preserveAspectRatio=none"), 0); }
 #[test] fn structure_image_preserveAspectRatio_eq_xMaxYMax_meet_on_svg() { assert_eq!(render("tests/structure/image/preserveAspectRatio=xMaxYMax-meet-on-svg"), 0); }
@@ -1198,6 +1219,8 @@ use crate::render;
 #[test] fn structure_svg_nested_svg_with_rect_and_viewBox_and_percent_values() { assert_eq!(render("tests/structure/svg/nested-svg-with-rect-and-viewBox-and-percent-values"), 0); }
 #[test] fn structure_svg_nested_svg_with_rect() { assert_eq!(render("tests/structure/svg/nested-svg-with-rect"), 0); }
 #[test] fn structure_svg_nested_svg_with_relative_width_and_height() { assert_eq!(render("tests/structure/svg/nested-svg-with-relative-width-and-height"), 0); }
+#[test] fn structure_svg_nested_svg_with_transform_and_clip() { assert_eq!(render("tests/structure/svg/nested-svg-with-transform-and-clip"), 0); }
+#[test] fn structure_svg_nested_svg_with_transform_and_opacity() { assert_eq!(render("tests/structure/svg/nested-svg-with-transform-and-opacity"), 0); }
 #[test] fn structure_svg_nested_svg_with_viewBox_and_percent_values() { assert_eq!(render("tests/structure/svg/nested-svg-with-viewBox-and-percent-values"), 0); }
 #[test] fn structure_svg_nested_svg_with_viewBox() { assert_eq!(render("tests/structure/svg/nested-svg-with-viewBox"), 0); }
 #[test] fn structure_svg_nested_svg() { assert_eq!(render("tests/structure/svg/nested-svg"), 0); }
@@ -1212,6 +1235,8 @@ use crate::render;
 #[test] fn structure_svg_preserveAspectRatio_eq_xMinYMin() { assert_eq!(render("tests/structure/svg/preserveAspectRatio=xMinYMin"), 0); }
 #[test] fn structure_svg_proportional_viewBox() { assert_eq!(render("tests/structure/svg/proportional-viewBox"), 0); }
 #[test] fn structure_svg_rect_inside_a_non_SVG_element() { assert_eq!(render("tests/structure/svg/rect-inside-a-non-SVG-element"), 0); }
+#[test] fn structure_svg_root_transform_origin_with_viewbox() { assert_eq!(render("tests/structure/svg/root-transform-origin-with-viewbox"), 0); }
+#[test] fn structure_svg_root_transform_with_viewbox() { assert_eq!(render("tests/structure/svg/root-transform-with-viewbox"), 0); }
 #[test] fn structure_svg_viewBox_not_at_zero_pos() { assert_eq!(render("tests/structure/svg/viewBox-not-at-zero-pos"), 0); }
 #[test] fn structure_svg_xmlns_validation() { assert_eq!(render("tests/structure/svg/xmlns-validation"), 0); }
 #[test] fn structure_switch_comment_as_first_child() { assert_eq!(render("tests/structure/switch/comment-as-first-child"), 0); }
@@ -1302,6 +1327,7 @@ use crate::render;
 #[test] fn structure_use_duplicated_IDs() { assert_eq!(render("tests/structure/use/duplicated-IDs"), 0); }
 #[test] fn structure_use_fill_opacity_inheritance() { assert_eq!(render("tests/structure/use/fill-opacity-inheritance"), 0); }
 #[test] fn structure_use_from_defs() { assert_eq!(render("tests/structure/use/from-defs"), 0); }
+#[test] fn structure_use_href_precedence_over_xlink() { assert_eq!(render("tests/structure/use/href-precedence-over-xlink"), 0); }
 #[test] fn structure_use_href_without_the_xlink_namespace() { assert_eq!(render("tests/structure/use/href-without-the-xlink-namespace"), 0); }
 #[test] fn structure_use_indirect_recursive_1() { assert_eq!(render("tests/structure/use/indirect-recursive-1"), 0); }
 #[test] fn structure_use_indirect_recursive_2() { assert_eq!(render("tests/structure/use/indirect-recursive-2"), 0); }
@@ -1402,6 +1428,7 @@ use crate::render;
 #[test] fn text_dominant_baseline_hanging() { assert_eq!(render("tests/text/dominant-baseline/hanging"), 0); }
 #[test] fn text_dominant_baseline_ideographic() { assert_eq!(render("tests/text/dominant-baseline/ideographic"), 0); }
 #[test] fn text_dominant_baseline_inherit() { assert_eq!(render("tests/text/dominant-baseline/inherit"), 0); }
+#[test] fn text_dominant_baseline_inherited_through_nested_tspan() { assert_eq!(render("tests/text/dominant-baseline/inherited-through-nested-tspan"), 0); }
 #[test] fn text_dominant_baseline_mathematical() { assert_eq!(render("tests/text/dominant-baseline/mathematical"), 0); }
 #[test] fn text_dominant_baseline_middle() { assert_eq!(render("tests/text/dominant-baseline/middle"), 0); }
 #[test] fn text_dominant_baseline_nested() { assert_eq!(render("tests/text/dominant-baseline/nested"), 0); }
@@ -1548,6 +1575,7 @@ use crate::render;
 #[test] fn text_text_xml_lang_eq_ja() { assert_eq!(render("tests/text/text/xml-lang=ja"), 0); }
 #[test] fn text_text_xml_space() { assert_eq!(render("tests/text/text/xml-space"), 0); }
 #[test] fn text_text_zalgo() { assert_eq!(render("tests/text/text/zalgo"), 0); }
+#[test] fn text_text_anchor_arabic_with_dx() { assert_eq!(render("tests/text/text-anchor/arabic-with-dx"), 0); }
 #[test] fn text_text_anchor_coordinates_list() { assert_eq!(render("tests/text/text-anchor/coordinates-list"), 0); }
 #[test] fn text_text_anchor_end_on_text() { assert_eq!(render("tests/text/text-anchor/end-on-text"), 0); }
 #[test] fn text_text_anchor_end_with_letter_spacing() { assert_eq!(render("tests/text/text-anchor/end-with-letter-spacing"), 0); }
@@ -1556,6 +1584,7 @@ use crate::render;
 #[test] fn text_text_anchor_inheritance_3() { assert_eq!(render("tests/text/text-anchor/inheritance-3"), 0); }
 #[test] fn text_text_anchor_invalid_value_on_text() { assert_eq!(render("tests/text/text-anchor/invalid-value-on-text"), 0); }
 #[test] fn text_text_anchor_middle_on_text() { assert_eq!(render("tests/text/text-anchor/middle-on-text"), 0); }
+#[test] fn text_text_anchor_negative_dx() { assert_eq!(render("tests/text/text-anchor/negative-dx"), 0); }
 #[test] fn text_text_anchor_on_the_first_tspan() { assert_eq!(render("tests/text/text-anchor/on-the-first-tspan"), 0); }
 #[test] fn text_text_anchor_on_tspan_with_arabic() { assert_eq!(render("tests/text/text-anchor/on-tspan-with-arabic"), 0); }
 #[test] fn text_text_anchor_on_tspan() { assert_eq!(render("tests/text/text-anchor/on-tspan"), 0); }
@@ -1577,6 +1606,7 @@ use crate::render;
 #[test] fn text_text_decoration_tspan_decoration() { assert_eq!(render("tests/text/text-decoration/tspan-decoration"), 0); }
 #[test] fn text_text_decoration_underline_with_dy_list_1() { assert_eq!(render("tests/text/text-decoration/underline-with-dy-list-1"), 0); }
 #[test] fn text_text_decoration_underline_with_dy_list_2() { assert_eq!(render("tests/text/text-decoration/underline-with-dy-list-2"), 0); }
+#[test] fn text_text_decoration_underline_with_dy_on_arabic() { assert_eq!(render("tests/text/text-decoration/underline-with-dy-on-arabic"), 0); }
 #[test] fn text_text_decoration_underline_with_rotate_list_3() { assert_eq!(render("tests/text/text-decoration/underline-with-rotate-list-3"), 0); }
 #[test] fn text_text_decoration_underline_with_rotate_list_4() { assert_eq!(render("tests/text/text-decoration/underline-with-rotate-list-4"), 0); }
 #[test] fn text_text_decoration_underline_with_y_list() { assert_eq!(render("tests/text/text-decoration/underline-with-y-list"), 0); }
@@ -1599,6 +1629,7 @@ use crate::render;
 #[test] fn text_textLength_on_a_single_tspan() { assert_eq!(render("tests/text/textLength/on-a-single-tspan"), 0); }
 #[test] fn text_textLength_on_text_and_tspan() { assert_eq!(render("tests/text/textLength/on-text-and-tspan"), 0); }
 #[test] fn text_textLength_zero() { assert_eq!(render("tests/text/textLength/zero"), 0); }
+#[test] fn text_textPath_arabic_with_dy() { assert_eq!(render("tests/text/textPath/arabic-with-dy"), 0); }
 #[test] fn text_textPath_closed_path() { assert_eq!(render("tests/text/textPath/closed-path"), 0); }
 #[test] fn text_textPath_complex() { assert_eq!(render("tests/text/textPath/complex"), 0); }
 #[test] fn text_textPath_dy_with_tiny_coordinates() { assert_eq!(render("tests/text/textPath/dy-with-tiny-coordinates"), 0); }
@@ -1654,6 +1685,7 @@ use crate::render;
 #[test] fn text_tref_with_a_title_child() { assert_eq!(render("tests/text/tref/with-a-title-child"), 0); }
 #[test] fn text_tref_with_text() { assert_eq!(render("tests/text/tref/with-text"), 0); }
 #[test] fn text_tref_xml_space() { assert_eq!(render("tests/text/tref/xml-space"), 0); }
+#[test] fn text_tspan_arabic_with_dy() { assert_eq!(render("tests/text/tspan/arabic-with-dy"), 0); }
 #[test] fn text_tspan_bidi_reordering() { assert_eq!(render("tests/text/tspan/bidi-reordering"), 0); }
 #[test] fn text_tspan_mixed_font_size() { assert_eq!(render("tests/text/tspan/mixed-font-size"), 0); }
 #[test] fn text_tspan_mixed_xml_space_1() { assert_eq!(render("tests/text/tspan/mixed-xml-space-1"), 0); }
@@ -1712,6 +1744,7 @@ use crate::render;
 #[test] fn text_writing_mode_tb_with_dx_on_tspan() { assert_eq!(render("tests/text/writing-mode/tb-with-dx-on-tspan"), 0); }
 #[test] fn text_writing_mode_tb_with_dy_on_second_tspan() { assert_eq!(render("tests/text/writing-mode/tb-with-dy-on-second-tspan"), 0); }
 #[test] fn text_writing_mode_tb_with_rotate_and_underline() { assert_eq!(render("tests/text/writing-mode/tb-with-rotate-and-underline"), 0); }
+#[test] fn text_writing_mode_tb_with_negative_dy_and_text_anchor() { assert_eq!(render("tests/text/writing-mode/tb-with-negative-dy-and-text-anchor"), 0); }
 #[test] fn text_writing_mode_tb_with_rotate() { assert_eq!(render("tests/text/writing-mode/tb-with-rotate"), 0); }
 #[test] fn text_writing_mode_tb() { assert_eq!(render("tests/text/writing-mode/tb"), 0); }
 #[test] fn text_writing_mode_vertical_lr() { assert_eq!(render("tests/text/writing-mode/vertical-lr"), 0); }

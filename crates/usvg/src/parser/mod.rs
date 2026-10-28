@@ -22,6 +22,7 @@ mod text;
 pub(crate) use converter::Cache;
 pub use image::{ImageHrefDataResolverFn, ImageHrefResolver, ImageHrefStringResolverFn};
 pub use options::Options;
+#[cfg(feature = "writer")]
 pub(crate) use svgtree::{AId, EId};
 
 /// List of all errors.
@@ -29,6 +30,9 @@ pub(crate) use svgtree::{AId, EId};
 pub enum Error {
     /// Only UTF-8 content are supported.
     NotAnUtf8Str,
+
+    /// `svgz` feature is required to parse SVGZ data.
+    SvgzFeatureNotEnabled,
 
     /// Compressed SVG must use the GZip algorithm.
     MalformedGZip,
@@ -58,6 +62,9 @@ impl std::fmt::Display for Error {
         match *self {
             Error::NotAnUtf8Str => {
                 write!(f, "provided data has not an UTF-8 encoding")
+            }
+            Self::SvgzFeatureNotEnabled => {
+                write!(f, "enable svgz cargo feature to decode SVGZ data")
             }
             Error::MalformedGZip => {
                 write!(f, "provided data has a malformed GZip content")
@@ -97,9 +104,15 @@ impl crate::Tree {
     /// Can contain an SVG string or a gzip compressed data.
     pub fn from_data(data: &[u8], opt: &Options) -> Result<Self, Error> {
         if data.starts_with(&[0x1f, 0x8b]) {
-            let data = decompress_svgz(data)?;
-            let text = std::str::from_utf8(&data).map_err(|_| Error::NotAnUtf8Str)?;
-            Self::from_str(text, opt)
+            #[cfg(feature = "svgz")]
+            {
+                let data = decompress_svgz(data)?;
+                let text = std::str::from_utf8(&data).map_err(|_| Error::NotAnUtf8Str)?;
+                Self::from_str(text, opt)
+            }
+
+            #[cfg(not(feature = "svgz"))]
+            Err(Error::SvgzFeatureNotEnabled)
         } else {
             let text = std::str::from_utf8(data).map_err(|_| Error::NotAnUtf8Str)?;
             Self::from_str(text, opt)
@@ -163,6 +176,7 @@ impl crate::Tree {
 }
 
 /// Decompresses an SVGZ file.
+#[cfg(feature = "svgz")]
 pub fn decompress_svgz(data: &[u8]) -> Result<Vec<u8>, Error> {
     use std::io::Read;
 
@@ -177,14 +191,14 @@ pub fn decompress_svgz(data: &[u8]) -> Result<Vec<u8>, Error> {
 #[inline]
 pub(crate) fn f32_bound(min: f32, val: f32, max: f32) -> f32 {
     debug_assert!(min.is_finite());
-    debug_assert!(val.is_finite());
     debug_assert!(max.is_finite());
 
     if val > max {
         max
-    } else if val < min {
-        min
-    } else {
+    } else if val >= min {
         val
+    } else {
+        // Catches `val < min` as well as a NaN `val`.
+        min
     }
 }

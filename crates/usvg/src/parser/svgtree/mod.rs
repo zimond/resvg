@@ -827,7 +827,6 @@ fn is_non_inheritable(id: AId) -> bool {
             | AId::BaselineShift
             | AId::ClipPath
             | AId::Display
-            | AId::DominantBaseline
             | AId::Filter
             | AId::FloodColor
             | AId::FloodOpacity
@@ -1047,7 +1046,7 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for ImageRendering {
 }
 
 impl<'a, 'input: 'a> FromValue<'a, 'input> for BlendMode {
-    fn parse(_: SvgNode, _: AId, value: &str) -> Option<Self> {
+    fn parse(_: SvgNode, aid: AId, value: &str) -> Option<Self> {
         match value {
             "normal" => Some(BlendMode::Normal),
             "multiply" => Some(BlendMode::Multiply),
@@ -1065,6 +1064,7 @@ impl<'a, 'input: 'a> FromValue<'a, 'input> for BlendMode {
             "saturation" => Some(BlendMode::Saturation),
             "color" => Some(BlendMode::Color),
             "luminosity" => Some(BlendMode::Luminosity),
+            "plus-lighter" if aid == AId::MixBlendMode => Some(BlendMode::PlusLighter),
             _ => None,
         }
     }

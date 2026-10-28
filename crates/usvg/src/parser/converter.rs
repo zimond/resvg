@@ -7,11 +7,11 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 #[cfg(feature = "text")]
+use crate::{FontVariation, GlyphId};
+#[cfg(feature = "text")]
 use fontdb::Database;
 #[cfg(feature = "text")]
 use fontdb::ID;
-#[cfg(feature = "text")]
-use rustybuzz::ttf_parser::GlyphId;
 use svgtypes::{Length, LengthUnit as Unit, PaintOrderKind, TransformOrigin};
 use tiny_skia_path::PathBuilder;
 
@@ -50,9 +50,9 @@ pub struct Cache {
     pub fontdb: Arc<Database>,
 
     #[cfg(feature = "text")]
-    cache_outline: HashMap<(ID, GlyphId), Option<tiny_skia_path::Path>>,
+    cache_outline: HashMap<(ID, GlyphId, Vec<FontVariation>), Option<tiny_skia_path::Path>>,
     #[cfg(feature = "text")]
-    cache_colr: HashMap<(ID, GlyphId), Option<Tree>>,
+    cache_colr: HashMap<(ID, GlyphId, Vec<FontVariation>), Option<Tree>>,
     #[cfg(feature = "text")]
     cache_svg: HashMap<(ID, GlyphId), Option<Node>>,
     #[cfg(feature = "text")]
@@ -204,10 +204,44 @@ impl Cache {
         }
     }
 
-    font_lookup!(fontdb_outline, cache_outline, outline, tiny_skia_path::Path);
-    font_lookup!(fontdb_colr, cache_colr, colr, Tree);
     font_lookup!(fontdb_svg, cache_svg, svg, Node);
     font_lookup!(fontdb_raster, cache_raster, raster, BitmapImage);
+
+    #[cfg(feature = "text")]
+    pub(crate) fn fontdb_outline(
+        &mut self,
+        font: ID,
+        glyph: GlyphId,
+        variations: &[FontVariation],
+    ) -> Option<tiny_skia_path::Path> {
+        let key = (font, glyph, variations.to_vec());
+        match self.cache_outline.get(&key) {
+            Some(cache_hit) => cache_hit.clone(),
+            None => {
+                let lookup = self.fontdb.outline(font, glyph, variations);
+                self.cache_outline.insert(key, lookup.clone());
+                lookup
+            }
+        }
+    }
+
+    #[cfg(feature = "text")]
+    pub(crate) fn fontdb_colr(
+        &mut self,
+        font: ID,
+        glyph: GlyphId,
+        variations: &[FontVariation],
+    ) -> Option<Tree> {
+        let key = (font, glyph, variations.to_vec());
+        match self.cache_colr.get(&key) {
+            Some(cache_hit) => cache_hit.clone(),
+            None => {
+                let lookup = self.fontdb.colr(font, glyph, variations);
+                self.cache_colr.insert(key, lookup.clone());
+                lookup
+            }
+        }
+    }
 
     #[cfg(feature = "text")]
     pub(crate) fn has_opsz_axis(&mut self, font: ID) -> bool {
@@ -415,7 +449,14 @@ pub(crate) fn convert_doc(svg_doc: &svgtree::Document, opt: &Options) -> Result<
         }
     }
 
-    let root_ts = view_box.to_transform(tree.size());
+    // The root transform wraps the viewBox mapping, so its origin is resolved
+    // against the viewport rather than the viewBox.
+    let root_state = State {
+        view_box: size.to_non_zero_rect(0.0, 0.0),
+        ..state.clone()
+    };
+    let svg_ts = svg.resolve_transform(AId::Transform, &root_state);
+    let root_ts = svg_ts.pre_concat(view_box.to_transform(tree.size()));
     if root_ts.is_identity() && background_color.is_none() {
         convert_children(svg_doc.root(), &state, &mut cache, &mut tree.root);
     } else {
@@ -540,7 +581,16 @@ fn resolve_svg_size(svg: &SvgNode, opt: &Options) -> (Result<Size, Error>, bool)
             svg.convert_user_length(AId::Height, &state, def)
         };
 
-        Size::from_wh(w, h)
+        // If exactly one of width and height is specified, compute the missing
+        // dimension from the specified one and the viewBox aspect ratio.
+        match (
+            svg.attribute::<Length>(AId::Width),
+            svg.attribute::<Length>(AId::Height),
+        ) {
+            (Some(_), None) => Size::from_wh(w, vbox.height() * w / vbox.width()),
+            (None, Some(_)) => Size::from_wh(vbox.width() * h / vbox.height(), h),
+            (_, _) => Size::from_wh(w, h),
+        }
     } else {
         Size::from_wh(
             svg.convert_user_length(AId::Width, &state, def),
@@ -598,6 +648,18 @@ pub(crate) fn convert_element(node: SvgNode, state: &State, cache: &mut Cache, p
         return;
     }
 
+    // A nested `svg` is handled just like `use`: it must not be wrapped in an
+    // additional `convert_group`, otherwise its `transform` (and other group
+    // properties) would be applied twice, since `convert_svg`
+    // already creates its own group. The outermost `svg` (no parent element)
+    // is intentionally not handled here - it's processed directly in
+    // `convert_doc`.
+    if tag_name == EId::Svg && node.parent_element().is_some() {
+        super::use_node::convert_svg(node, state, cache, parent);
+
+        return;
+    }
+
     if let Some(g) = convert_group(node, state, false, cache, parent, &|cache, g| {
         convert_element_impl(tag_name, node, state, cache, g);
     }) {
@@ -635,12 +697,10 @@ fn convert_element_impl(
             }
         }
         EId::Svg => {
-            if node.parent_element().is_some() {
-                super::use_node::convert_svg(node, state, cache, parent);
-            } else {
-                // Skip root `svg`.
-                convert_children(node, state, cache, parent);
-            }
+            // Only the outermost `svg` reaches this point; nested `svg` elements are
+            // handled earlier in `convert_element`. The root `svg` itself is
+            // skipped and only its children are converted.
+            convert_children(node, state, cache, parent);
         }
         EId::G => {
             convert_children(node, state, cache, parent);
@@ -752,7 +812,13 @@ pub(crate) fn convert_group(
         Opacity::ONE
     };
 
-    let transform = node.resolve_transform(AId::Transform, state);
+    let is_root_svg = node.tag_name() == Some(EId::Svg) && node.parent_element().is_none();
+    let transform = if is_root_svg {
+        // Already applied outside the viewBox mapping in `convert_doc`.
+        Transform::default()
+    } else {
+        node.resolve_transform(AId::Transform, state)
+    };
     let blend_mode: BlendMode = node.attribute(AId::MixBlendMode).unwrap_or_default();
     let isolation: Isolation = node.attribute(AId::Isolation).unwrap_or_default();
     let isolate = isolation == Isolation::Isolate;
@@ -1046,7 +1112,20 @@ pub fn svg_paint_order_to_usvg(order: svgtypes::PaintOrder) -> PaintOrder {
 impl SvgNode<'_, '_> {
     pub(crate) fn resolve_transform(&self, transform_aid: AId, state: &State) -> Transform {
         let mut transform: Transform = self.attribute(transform_aid).unwrap_or_default();
-        let transform_origin: Option<TransformOrigin> = self.attribute(AId::TransformOrigin);
+        let transform_origin = self
+            .attribute::<TransformOrigin>(AId::TransformOrigin)
+            .or_else(|| {
+                // The root SVG uses the CSS initial origin; other SVG elements use (0, 0).
+                if self.tag_name() == Some(EId::Svg) && self.parent_element().is_none() {
+                    Some(TransformOrigin::new(
+                        Length::new(50.0, Unit::Percent),
+                        Length::new(50.0, Unit::Percent),
+                        Length::zero(),
+                    ))
+                } else {
+                    None
+                }
+            });
 
         if let Some(transform_origin) = transform_origin {
             let dx = convert_length(

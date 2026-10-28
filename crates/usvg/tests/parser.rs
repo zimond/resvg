@@ -5,6 +5,16 @@ use tiny_skia_path::Rect;
 use usvg::Color;
 
 #[test]
+fn gradient_stop_offset_overflowing_f32() {
+    // `4e38` overflows f32 to infinity; parsing must not panic.
+    let svg = "<svg xmlns='http://www.w3.org/2000/svg'>\
+        <defs><linearGradient id='g'><stop offset='4e38'/></linearGradient></defs>\
+        <rect width='1' height='1' fill='url(#g)'/>\
+    </svg>";
+    assert!(usvg::Tree::from_str(svg, &usvg::Options::default()).is_ok());
+}
+
+#[test]
 fn clippath_with_invalid_child() {
     let svg = "
     <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'>
@@ -71,19 +81,19 @@ fn stylesheet_injection() {
         &usvg::Paint::Color(Color::new_rgb(0, 128, 0))
     );
 
-    let usvg::Node::Path(third) = &tree.root().children()[3] else {
+    let usvg::Node::Path(fourth) = &tree.root().children()[3] else {
         unreachable!()
     };
     assert_eq!(
-        third.fill().unwrap().paint(),
+        fourth.fill().unwrap().paint(),
         &usvg::Paint::Color(Color::new_rgb(0, 128, 0))
     );
 
-    let usvg::Node::Path(third) = &tree.root().children()[3] else {
+    let usvg::Node::Path(fifth) = &tree.root().children()[4] else {
         unreachable!()
     };
     assert_eq!(
-        third.fill().unwrap().paint(),
+        fifth.fill().unwrap().paint(),
         &usvg::Paint::Color(Color::new_rgb(0, 128, 0))
     );
 }
@@ -215,6 +225,34 @@ fn size_detection_5() {
     let svg = "<svg xmlns='http://www.w3.org/2000/svg'/>";
     let tree = usvg::Tree::from_str(&svg, &usvg::Options::default()).unwrap();
     assert_eq!(tree.size(), usvg::Size::from_wh(100.0, 100.0).unwrap());
+}
+
+#[test]
+fn size_detection_6() {
+    let svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' width='30'/>";
+    let tree = usvg::Tree::from_str(&svg, &usvg::Options::default()).unwrap();
+    assert_eq!(tree.size(), usvg::Size::from_wh(30.0, 30.0).unwrap());
+}
+
+#[test]
+fn size_detection_7() {
+    let svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' width='30'/>";
+    let tree = usvg::Tree::from_str(&svg, &usvg::Options::default()).unwrap();
+    assert_eq!(tree.size(), usvg::Size::from_wh(30.0, 60.0).unwrap());
+}
+
+#[test]
+fn size_detection_8() {
+    let svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10' height='30'/>";
+    let tree = usvg::Tree::from_str(&svg, &usvg::Options::default()).unwrap();
+    assert_eq!(tree.size(), usvg::Size::from_wh(30.0, 30.0).unwrap());
+}
+
+#[test]
+fn size_detection_9() {
+    let svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 20' height='30'/>";
+    let tree = usvg::Tree::from_str(&svg, &usvg::Options::default()).unwrap();
+    assert_eq!(tree.size(), usvg::Size::from_wh(15.0, 30.0).unwrap());
 }
 
 #[test]
@@ -590,4 +628,77 @@ fn flattened_text_should_inherit_absolute_transform() {
         path.bounding_box().transform(t).unwrap(),
         path.abs_bounding_box()
     );
+}
+
+#[test]
+fn use_node_abs_transform() {
+    let svg = "
+    <svg viewBox='0 0 200 200'
+         xmlns='http://www.w3.org/2000/svg'
+         xmlns:xlink='http://www.w3.org/1999/xlink'>
+        <defs>
+            <rect id='rect1' x='0' y='0' width='100' height='100'/>
+        </defs>
+        <use xlink:href='#rect1' transform='matrix(0.5, 0, 0, 0.5, 20, 30)' />
+    </svg>
+    ";
+
+    let tree = usvg::Tree::from_str(&svg, &usvg::Options::default()).unwrap();
+
+    let usvg::Node::Group(group_node) = &tree.root().children()[0] else {
+        unreachable!()
+    };
+    assert_eq!(group_node.abs_transform().get_scale(), (0.5, 0.5));
+
+    let usvg::Node::Path(path_node) = &group_node.children()[0] else {
+        unreachable!()
+    };
+    assert_eq!(path_node.abs_transform().get_scale(), (0.5, 0.5));
+    assert_eq!(
+        path_node.abs_bounding_box(),
+        Rect::from_xywh(20.0, 30.0, 50.0, 50.0).unwrap()
+    );
+}
+
+#[test]
+fn nested_svg_abs_bounding_box() {
+    let svg = "
+    <svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'>
+        <svg transform='translate(10, 20)' width='50' height='50'>
+            <path id='path' d='M 0 0 L 10 10'/>
+        </svg>
+    </svg>
+    ";
+    let tree = usvg::Tree::from_str(&svg, &usvg::Options::default()).unwrap();
+    assert_eq!(
+        tree.node_by_id("path").unwrap().abs_bounding_box(),
+        Rect::from_xywh(10.0, 20.0, 10.0, 10.0).unwrap()
+    );
+}
+
+#[test]
+fn resolve_fr_from_referenced_radial_gradient() {
+    let svg = "
+    <svg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'>
+        <defs>
+            <radialGradient id='base' gradientUnits='userSpaceOnUse' cx='50' cy='50' r='50' fx='50' fy='50' fr='25'>
+                <stop offset='0%' stop-color='red'/>
+                <stop offset='100%' stop-color='blue'/>
+            </radialGradient>
+            <radialGradient id='ref' href='#base' xlink:href='#base'/>
+        </defs>
+        <rect width='100' height='100' fill='url(#ref)'/>
+    </svg>
+    ";
+
+    let tree = usvg::Tree::from_str(svg, &usvg::Options::default()).unwrap();
+
+    let usvg::Node::Path(path) = &tree.root().children()[0] else {
+        unreachable!()
+    };
+    let usvg::Paint::RadialGradient(rg) = path.fill().unwrap().paint() else {
+        unreachable!()
+    };
+
+    assert_eq!(rg.fr().get(), 25.0);
 }

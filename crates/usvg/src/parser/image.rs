@@ -261,6 +261,7 @@ pub(crate) fn convert_inner(
 
         let mut clip = ClipPath::empty(cache.gen_clip_path_id());
         clip.root.children.push(Node::Path(Box::new(path)));
+        clip.root.calculate_bounding_boxes();
 
         // Clip path should not be affected by the image viewbox transform.
         // The final structure should look like:
@@ -276,6 +277,21 @@ pub(crate) fn convert_inner(
         g2.clip_path = Some(Arc::new(clip));
         g2.children.push(Node::Group(Box::new(g)));
         g2.calculate_bounding_boxes();
+
+        // With `slice`, the image is scaled to *cover* the viewport and the
+        // overflow is cut away by the rectangular clip above. The bounding box
+        // of the element is therefore its `rect` (the viewport), not the
+        // larger scaled-to-cover image that `calculate_bounding_boxes` derives
+        // from the children. Without this correction an `objectBoundingBox`
+        // clip/mask/filter applied to the `<image>` would be resolved against
+        // the oversized image. See https://github.com/linebender/resvg/issues/1034
+        let bbox = rect.to_rect();
+        g2.bounding_box = bbox;
+        g2.stroke_bounding_box = bbox;
+        if let Some(abs) = bbox.transform(g2.abs_transform) {
+            g2.abs_bounding_box = abs;
+            g2.abs_stroke_bounding_box = abs;
+        }
 
         parent.children.push(Node::Group(Box::new(g2)));
     } else {

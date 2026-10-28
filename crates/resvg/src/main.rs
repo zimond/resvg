@@ -38,10 +38,10 @@ fn process() -> Result<(), String> {
         }
     };
 
-    // Do not print warning during the ID querying.
+    // Do not print warnings during bounding box queries.
     //
     // Some crates still can print to stdout/stderr, but we can't do anything about it.
-    if !(args.query_all || args.quiet) {
+    if !(args.query_all || args.query_bbox || args.quiet) {
         if let Ok(()) = log::set_logger(&LOGGER) {
             log::set_max_level(log::LevelFilter::Warn);
         }
@@ -98,6 +98,9 @@ fn process() -> Result<(), String> {
     if args.query_all {
         return query_all(&tree);
     }
+    if args.query_bbox {
+        return query_bbox(&tree);
+    }
 
     // Render.
     let img = render_svg(&args, &tree)?;
@@ -130,6 +133,7 @@ USAGE:
   resvg in.svg out.png
   resvg -z 4 in.svg out.png
   resvg --query-all in.svg
+  resvg --query-bbox in.svg
 
 OPTIONS:
       --help                    Prints this help
@@ -200,6 +204,8 @@ OPTIONS:
 
 
   --query-all                   Queries all valid SVG ids with bounding boxes
+  --query-bbox                  Queries the drawing bounding box as x,y,width,height
+                                Includes strokes and filter regions
   --export-id ID                Renders an object only with a specified ID
   --export-area-page            Use an image size instead of an object size during ID exporting
 
@@ -242,6 +248,7 @@ struct CliArgs {
     style_sheet: Option<path::PathBuf>,
 
     query_all: bool,
+    query_bbox: bool,
     export_id: Option<String>,
     export_area_page: bool,
 
@@ -305,6 +312,7 @@ fn collect_args() -> Result<CliArgs, pico_args::Error> {
         list_fonts: input.contains("--list-fonts"),
 
         query_all: input.contains("--query-all"),
+        query_bbox: input.contains("--query-bbox"),
         export_id: input.opt_value_from_str("--export-id")?,
         export_area_page: input.contains("--export-area-page"),
 
@@ -389,35 +397,34 @@ enum FitTo {
     /// Keep original size.
     Original,
     /// Scale to width.
-    Width(u32),
+    Width(f32),
     /// Scale to height.
-    Height(u32),
+    Height(f32),
     /// Scale to size.
-    Size(u32, u32),
+    Size(f32, f32),
     /// Zoom by factor.
     Zoom(f32),
 }
 
 impl FitTo {
-    fn fit_to_size(&self, size: tiny_skia::IntSize) -> Option<tiny_skia::IntSize> {
+    fn fit_to_size(&self, size: tiny_skia::Size) -> Option<tiny_skia::Size> {
         match *self {
             FitTo::Original => Some(size),
             FitTo::Width(w) => size.scale_to_width(w),
             FitTo::Height(h) => size.scale_to_height(h),
-            FitTo::Size(w, h) => tiny_skia::IntSize::from_wh(w, h).map(|s| size.scale_to(s)),
+            FitTo::Size(w, h) => tiny_skia::Size::from_wh(w, h).map(|s| size.scale_to(s)),
             FitTo::Zoom(z) => size.scale_by(z),
         }
     }
 
-    fn fit_to_transform(&self, size: tiny_skia::IntSize) -> tiny_skia::Transform {
-        let size1 = size.to_size();
-        let size2 = match self.fit_to_size(size) {
-            Some(v) => v.to_size(),
+    fn fit_to_transform(&self, original_size: tiny_skia::Size) -> tiny_skia::Transform {
+        let target_size = match self.fit_to_size(original_size) {
+            Some(v) => v,
             None => return tiny_skia::Transform::default(),
         };
         tiny_skia::Transform::from_scale(
-            size2.width() / size1.width(),
-            size2.height() / size1.height(),
+            target_size.width() / original_size.width(),
+            target_size.height() / original_size.height(),
         )
     }
 }
@@ -458,6 +465,7 @@ struct Args {
     in_svg: InputFrom,
     out_png: Option<OutputTo>,
     query_all: bool,
+    query_bbox: bool,
     export_id: Option<String>,
     export_area_page: bool,
     export_area_drawing: bool,
@@ -504,8 +512,11 @@ fn parse_args() -> Result<Args, String> {
         (svg_from, out_png)
     };
 
-    if !args.query_all && out_png.is_none() {
+    if !args.query_all && !args.query_bbox && out_png.is_none() {
         return Err("<out-png> must be set".to_string());
+    }
+    if args.query_all && args.query_bbox {
+        return Err("--query-all and --query-bbox are mutually exclusive".to_string());
     }
 
     if in_svg == InputFrom::Stdin && args.resources_dir.is_none() {
@@ -526,13 +537,13 @@ fn parse_args() -> Result<Args, String> {
     let mut default_size = usvg::Size::from_wh(100.0, 100.0).unwrap();
     if let (Some(w), Some(h)) = (args.width, args.height) {
         default_size = usvg::Size::from_wh(w as f32, h as f32).unwrap();
-        fit_to = FitTo::Size(w, h);
+        fit_to = FitTo::Size(w as f32, h as f32);
     } else if let Some(w) = args.width {
         default_size = usvg::Size::from_wh(w as f32, 100.0).unwrap();
-        fit_to = FitTo::Width(w);
+        fit_to = FitTo::Width(w as f32);
     } else if let Some(h) = args.height {
         default_size = usvg::Size::from_wh(100.0, h as f32).unwrap();
-        fit_to = FitTo::Height(h);
+        fit_to = FitTo::Height(h as f32);
     } else if let Some(z) = args.zoom {
         fit_to = FitTo::Zoom(z);
     }
@@ -584,6 +595,7 @@ fn parse_args() -> Result<Args, String> {
         in_svg,
         out_png,
         query_all: args.query_all,
+        query_bbox: args.query_bbox,
         export_id,
         export_area_page: args.export_area_page,
         export_area_drawing: args.export_area_drawing,
@@ -640,23 +652,11 @@ fn query_all_impl(parent: &usvg::Group) -> usize {
 
         count += 1;
 
-        fn round_len(v: f32) -> f32 {
-            (v * 1000.0).round() / 1000.0
-        }
-
         let bbox = node
             .abs_layer_bounding_box()
             .map(|r| r.to_rect())
             .unwrap_or(node.abs_bounding_box());
-
-        println!(
-            "{},{},{},{},{}",
-            node.id(),
-            round_len(bbox.x()),
-            round_len(bbox.y()),
-            round_len(bbox.width()),
-            round_len(bbox.height())
-        );
+        println!("{},{}", node.id(), format_bbox(bbox));
 
         if let usvg::Node::Group(group) = node {
             count += query_all_impl(group);
@@ -664,6 +664,28 @@ fn query_all_impl(parent: &usvg::Group) -> usize {
     }
 
     count
+}
+
+fn format_bbox(bbox: usvg::Rect) -> String {
+    fn round_len(v: f32) -> f64 {
+        (f64::from(v) * 1000.0).round() / 1000.0
+    }
+
+    format!(
+        "{},{},{},{}",
+        round_len(bbox.x()),
+        round_len(bbox.y()),
+        round_len(bbox.width()),
+        round_len(bbox.height()),
+    )
+}
+
+fn query_bbox(tree: &usvg::Tree) -> Result<(), String> {
+    println!(
+        "{}",
+        format_bbox(tree.root().abs_layer_bounding_box().to_rect())
+    );
+    Ok(())
 }
 
 fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, String> {
@@ -679,12 +701,13 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
 
         let size = args
             .fit_to
-            .fit_to_size(bbox.size().to_int_size())
+            .fit_to_size(bbox.size())
             .ok_or("target size is zero")?;
 
         // Pixmap's width is limited by i32::MAX/4, we handle the creation error.
         let mut pixmap =
-            tiny_skia::Pixmap::new(size.width(), size.height()).ok_or("cannot create pixmap")?;
+            tiny_skia::Pixmap::new(size.width().ceil() as u32, size.height().ceil() as u32)
+                .ok_or("cannot create pixmap")?;
 
         if !args.export_area_page {
             if let Some(background) = args.background {
@@ -692,7 +715,7 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
             }
         }
 
-        let ts = args.fit_to.fit_to_transform(tree.size().to_int_size());
+        let ts = args.fit_to.fit_to_transform(tree.size());
 
         resvg::render_node(node, ts, &mut pixmap.as_mut());
 
@@ -701,12 +724,13 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
 
             let size = args
                 .fit_to
-                .fit_to_size(tree.size().to_int_size())
+                .fit_to_size(tree.size())
                 .ok_or("target size is zero")?;
 
             // Pixmap's width is limited by i32::MAX/4, we handle the creation error.
-            let mut page_pixmap = tiny_skia::Pixmap::new(size.width(), size.height())
-                .ok_or("cannot create pixmap")?;
+            let mut page_pixmap =
+                tiny_skia::Pixmap::new(size.width().ceil() as u32, size.height().ceil() as u32)
+                    .ok_or("cannot create pixmap")?;
 
             if let Some(background) = args.background {
                 page_pixmap.fill(svg_to_skia_color(background));
@@ -727,18 +751,19 @@ fn render_svg(args: &Args, tree: &usvg::Tree) -> Result<tiny_skia::Pixmap, Strin
     } else {
         let size = args
             .fit_to
-            .fit_to_size(tree.size().to_int_size())
+            .fit_to_size(tree.size())
             .ok_or("target size is zero")?;
 
         // Pixmap's width is limited by i32::MAX/4, we handle the creation error.
         let mut pixmap =
-            tiny_skia::Pixmap::new(size.width(), size.height()).ok_or("cannot create pixmap")?;
+            tiny_skia::Pixmap::new(size.width().ceil() as u32, size.height().ceil() as u32)
+                .ok_or("cannot create pixmap")?;
 
         if let Some(background) = args.background {
             pixmap.fill(svg_to_skia_color(background));
         }
 
-        let ts = args.fit_to.fit_to_transform(tree.size().to_int_size());
+        let ts = args.fit_to.fit_to_transform(tree.size());
 
         resvg::render(tree, ts, &mut pixmap.as_mut());
 

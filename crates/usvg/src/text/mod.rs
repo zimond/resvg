@@ -10,10 +10,24 @@ use self::layout::DatabaseExt;
 use crate::{Cache, Font, FontStretch, FontStyle, Text};
 
 pub(crate) mod flatten;
+mod transform;
 
 mod colr;
 /// Provides access to the layout of a text node.
 pub mod layout;
+
+/// The optical sizing variation axis tag.
+pub(crate) const OPSZ: skrifa::Tag = skrifa::Tag::from_be_bytes(*b"opsz");
+
+/// The ID of a glyph within a font
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct GlyphId(pub u32);
+
+impl From<GlyphId> for skrifa::raw::types::GlyphId {
+    fn from(value: GlyphId) -> Self {
+        Self::new(value.0)
+    }
+}
 
 /// A shorthand for [FontResolver]'s font selection function.
 ///
@@ -147,6 +161,7 @@ impl FontResolver<'_> {
     pub fn default_fallback_selector() -> FallbackSelectionFn<'static> {
         Box::new(|c, exclude_fonts, fontdb| {
             let base_font_id = exclude_fonts[0];
+            let base_face = fontdb.face(base_font_id)?;
 
             // Iterate over fonts and check if any of them support the specified char.
             for face in fontdb.faces() {
@@ -156,7 +171,6 @@ impl FontResolver<'_> {
                 }
 
                 // Check that the new face has the same style.
-                let base_face = fontdb.face(base_font_id)?;
                 if base_face.style != face.style
                     && base_face.weight != face.weight
                     && base_face.stretch != face.stretch
@@ -178,7 +192,7 @@ impl FontResolver<'_> {
                     .families
                     .iter()
                     .find(|f| f.1 == fontdb::Language::English_UnitedStates)
-                    .unwrap_or(&base_face.families[0]);
+                    .unwrap_or(&face.families[0]);
 
                 log::warn!("Fallback from {} to {}.", base_family.0, new_family.0);
                 return Some(face.id);

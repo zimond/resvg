@@ -11,9 +11,9 @@
 #define RESVG_QT_H
 
 #define RESVG_QT_MAJOR_VERSION 0
-#define RESVG_QT_MINOR_VERSION 47
+#define RESVG_QT_MINOR_VERSION 49
 #define RESVG_QT_PATCH_VERSION 0
-#define RESVG_QT_VERSION "0.47.0"
+#define RESVG_QT_VERSION "0.49.0"
 
 #include <cmath>
 
@@ -71,6 +71,8 @@ static QString errorToString(const int err)
             return QString();
         case RESVG_ERROR_NOT_AN_UTF8_STR :
             return QLatin1String("The SVG content has not an UTF-8 encoding.");
+        case RESVG_ERROR_SVGZ_UNSUPPORTED :
+            return QLatin1String("SVGZ decoding is unsupported.");
         case RESVG_ERROR_FILE_OPEN_FAILED :
             return QLatin1String("Failed to read the file.");
         case RESVG_ERROR_MALFORMED_GZIP :

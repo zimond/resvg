@@ -74,6 +74,7 @@ NOTE: This list is not final. This just things I was able to find so far. Patche
 
 - [ ] A [`transform-box`](https://www.w3.org/TR/css-transforms-1/#transform-box) property.
 - [x] A [`transform-origin`](https://www.w3.org/TR/css-transforms-1/#transform-origin-property) property.
+- [x] A [`transform`](https://www.w3.org/TR/SVG2/coords.html#ViewBoxAttribute) on the outermost `svg` element, applied outside the `viewBox` mapping.
 - [ ] A [`vector-effect`](https://www.w3.org/TR/SVG2/coords.html#VectorEffects) property.
 
 ### Changed
@@ -193,6 +194,7 @@ Basically everything from [CSS Text Module Level 3](https://www.w3.org/TR/css-te
 - [x] (partial support) A [`paint-order`](https://www.w3.org/TR/SVG2/painting.html#PaintOrder) property.
 - [x] `context-fill` and `context-stroke` variants to the [`<paint>`](https://www.w3.org/TR/SVG2/painting.html#SpecifyingPaint) type.
 - [x] A [`mix-blend-mode`](https://www.w3.org/TR/compositing-1/#mix-blend-mode) property.
+- [x] A `plus-lighter` variant to the [`mix-blend-mode`](https://drafts.csswg.org/compositing-2/#mix-blend-mode) property.
 - [x] An [`isolation`](https://www.w3.org/TR/compositing-1/#isolation) property.
 - [ ] `left`, `center` and `right` variants to `refX` and `refY` properties of the [`marker`](https://www.w3.org/TR/SVG2/painting.html#MarkerElement) element.
 - [x] An `auto-start-reverse` variant to [`orient`](https://www.w3.org/TR/SVG2/painting.html#OrientAttribute) property of the [`marker`](https://www.w3.org/TR/SVG2/painting.html#MarkerElement) element
@@ -252,6 +254,7 @@ Basically everything from [CSS Text Module Level 3](https://www.w3.org/TR/css-te
 - [x] [Filter functions](https://www.w3.org/TR/filter-effects-1/#filter-functions).
 - [x] New [blend modes](https://www.w3.org/TR/compositing-1/#ltblendmodegt) to [`feBlend`](https://www.w3.org/TR/filter-effects-1/#feBlendElement) element.
 - [ ] A [`no-composite`](https://www.w3.org/TR/filter-effects-1/#element-attrdef-feblend-no-composite) property to [`feBlend`](https://www.w3.org/TR/filter-effects-1/#feBlendElement) element.
+- [x] A `lighter` variant to the [`operator`](https://www.w3.org/TR/filter-effects-1/#element-attrdef-fecomposite-operator) attribute of the [`feComposite`](https://www.w3.org/TR/filter-effects-1/#feCompositeElement) element.
 
 ### Changed
 

@@ -8,7 +8,105 @@ This changelog also contains important changes in dependencies.
 
 ## [Unreleased]
 
-This release has an MSRV of 1.87.0 for `usvg` and `resvg` and the C API.
+## [0.49.0] 2026-10-24
+
+This release has an MSRV of 1.85.0 for `usvg` and `resvg` and the C API.
+
+### Added
+
+- `--query-bbox` CLI option to query the drawing bounding box without rasterizing it. (#1050)
+- `mix-blend-mode: plus-lighter` (Compositing and Blending Level 2). (#1142)
+- `feComposite` `operator="lighter"` (SVG 2). (#1142)
+- Prebuilt `aarch64` release binaries for Linux and Windows. (#1132)
+
+### Changed
+
+- `usvg::BlendMode` and `usvg::filter::CompositeOperator` have new `PlusLighter`
+  and `Lighter` variants. (#1142)
+- `Group::layer_bounding_box` of a group without filters is now clipped by its clip path,
+  so clipped groups allocate smaller layers. This also affects the sizes reported by
+  `--query-all` and used by `--export-id`. (#1158)
+
+### Fixed
+
+- `dominant-baseline` is now correctly inherited by nested `<tspan>` elements,
+  so a nested span stays on the same baseline as its siblings. (#1086)
+- Panics and incorrect clipping when a filter region is smaller than its input. (#1144)
+- Incorrect transform order on the outermost `svg` element with a `viewBox`. (#1085)
+- Relative positioning of right-to-left text with `dx` and `dy`, including text on a path and text decorations. (#1145)
+- `text-anchor` now uses the actual extent of a text chunk, which `dx` and `textLength` can change. (#1145)
+- Filters inside rotated or skewed groups are now applied in the user space of the group.
+  This fixes the clipping to filter regions and subregions, as well as the direction of
+  offsets, blurs, turbulence and tiles, and the rendering of `feImage`. (#1155)
+- `gradientTransform` and `patternTransform` are now inherited via `href`. (#1135)
+- The bounding box of an `<image>` with `preserveAspectRatio="… slice"` is now its viewport,
+  so `objectBoundingBox` clip paths, masks and filters on it are resolved correctly. (#1077)
+- Markers are now clipped to their viewport instead of their `viewBox` when the aspect ratios differ. (#1163)
+- Object bounding box gradients inside masks, patterns and `feImage` filters used by more than one element
+  are now resolved correctly, instead of being rendered as a flat fill or not at all. (#1164)
+- `feMorphology` kernels are now symmetric and fractional radii are rounded to the nearest pixel. (#1120)
+- Font fallback log messages now always name the correct fallback font family. (#1154)
+- The `resvg` CLI no longer rounds fractional image sizes before scaling, and rounds the output size up
+  instead of to the nearest integer. (#875)
+- The C API header was missing `RESVG_ERROR_SVGZ_UNSUPPORTED`, so all following error codes were off by one. (#1122)
+- `cargo-c` now installs `ResvgQt.h` alongside `resvg.h`. (#1182)
+
+## [0.48.1] 2026-08-02
+
+This release has an MSRV of 1.85.0 for `usvg` and `resvg` and the C API.
+
+### Changed
+
+- MSRV lowered from 1.89 to 1.85. (#1109)
+- Downgraded strict-num dependency to 0.1.1. This prevents duplicate versions from being included (#1110)
+
+### Fixed
+
+- Fixed an `as_mut_slice` future-compatibility warning. (#1108)
+
+## [0.48.0] 2026-07-31
+
+This release has an MSRV of 1.89.0 for `usvg` and `resvg` and the C API.
+
+The big change in this release is that text support is now backed by
+[`skrifa`](https://github.com/googlefonts/fontations) and
+[`harfrust`](https://github.com/harfbuzz/harfrust) rather than
+[`ttf-parser`](https://github.com/harfbuzz/ttf-parser) and
+[`rustybuzz`](https://github.com/harfbuzz/rustybuzz):
+
+- Moves resvg onto an actively maintained font stack.
+- Should have faster and more correct text rendering.
+- Will enable further improvements to things like variable font rendering in future.
+- May impact binary size (expected +~500kb for people not otherwise including fontations dependencies in their tree).
+- May result in small rendering changes compared to older versions of resvg.
+
+### Added
+
+- New `svgz` and `writer` feature gates to reduce the number of required dependencies. (#1088 by @reed-smout)
+- Warnings when parsing malformed paths. (#1011)
+- A `Display` implementation for `Units`. (#986)
+
+### Changed
+
+- MSRV bumped from 1.87 to 1.89. The requirement comes from `font-types`.
+- Text shaping now uses `harfrust` instead of `rustybuzz`, and font parsing uses `skrifa` (fontations) instead of `ttf-parser`. (#922 by @nicoburns)
+- Filter input dimension checks are now debug-only assertions. (#991)
+
+### Fixed
+
+- Glyph advances are now calculated correctly. (#1043 by @fundon)
+- Text nodes now inherit their absolute transform. (#1040 by @fundon)
+- Fixes related to non-finite values. (#1049 by @SAY-5)
+- Transforms are no longer applied twice in `abs_transform`. (#1056 by @fundon)
+- `fr` is now resolved for radial gradients referenced via `href`. (#1098 by @T1mVo)
+- Panic in `feComposite` with the `arithmetic` operator when the filter region is larger than the clamped layer. (#1021, #1007)
+- Application of `transform` (and other group properties like `opacity`) on a nested `svg`
+  element.
+- The missing dimension of an `svg` with only `width` or `height` specified is now computed from its `viewBox` aspect ratio. (#1045)
+- The `wght` variation coordinate is now set even when `font-weight` has its default value. (#1099)
+- The unprefixed `href` attribute now takes precedence over the deprecated `xlink:href` when both are present, as required by SVG 2. (#1015)
+- Incorrect y-axis offsets when transforming `feSpotLight` sources. (#1052)
+- Panics caused by bounding boxes that exceed the supported integer range. (#989)
 
 ## [0.47.0] 2026-02-05
 
@@ -1340,7 +1438,10 @@ This release has an MSRV of 1.65 for `usvg` and 1.67.1 for `resvg` and the C API
 
 [#897]: https://github.com/linebender/resvg/pull/897
 
-[Unreleased]: https://github.com/linebender/resvg/compare/v0.47.0...HEAD
+[Unreleased]: https://github.com/linebender/resvg/compare/v0.49.0...HEAD
+[0.49.0]: https://github.com/linebender/resvg/compare/v0.48.1...v0.49.0
+[0.48.1]: https://github.com/linebender/resvg/compare/v0.48.0...v0.48.1
+[0.48.0]: https://github.com/linebender/resvg/compare/v0.47.0...v0.48.0
 [0.47.0]: https://github.com/linebender/resvg/compare/v0.46.0...v0.47.0
 [0.46.0]: https://github.com/linebender/resvg/compare/v0.45.1...v0.46.0
 [0.45.1]: https://github.com/linebender/resvg/compare/v0.45.0...v0.45.1
